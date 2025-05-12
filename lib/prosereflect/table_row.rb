@@ -5,20 +5,13 @@ require_relative 'table_cell'
 
 module Prosereflect
   class TableRow < Node
-    def cells
-      content.select { |node| node.type == 'table_cell' }
-    end
+    PM_TYPE = 'table_row'
 
-    # Create a new table row
-    def self.create(attrs = nil)
-      row = new({ 'type' => 'table_row', 'content' => [] })
-      row.instance_variable_set(:@attrs, attrs) if attrs
-      row
-    end
+    attribute :cells, TableCell, collection: true
 
     # Add a cell to the row
     def add_cell(content_text = nil)
-      cell = TableCell.create
+      cell = TableCell.new
 
       if content_text
         paragraph = cell.add_paragraph

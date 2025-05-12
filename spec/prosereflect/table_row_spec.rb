@@ -20,7 +20,7 @@ RSpec.describe Prosereflect::TableRow do
 
     it 'creates a table row with attributes' do
       attrs = { 'background' => '#f5f5f5' }
-      row = described_class.create(attrs)
+      row = described_class.new(attrs: attrs)
       expect(row.attrs).to eq(attrs)
     end
   end

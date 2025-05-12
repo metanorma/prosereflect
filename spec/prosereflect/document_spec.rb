@@ -28,7 +28,7 @@ RSpec.describe Prosereflect::Document do
 
     it 'creates a document with attributes' do
       attrs = { 'version' => 1 }
-      doc = described_class.create(attrs)
+      doc = described_class.new(attrs: attrs)
       expect(doc.attrs).to eq(attrs)
     end
   end

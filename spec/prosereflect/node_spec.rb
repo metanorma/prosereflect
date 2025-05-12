@@ -1,15 +1,18 @@
 # frozen_string_literal: true
 
+require 'spec_helper'
+
 RSpec.describe Prosereflect::Node do
   describe 'initialization' do
     it 'initializes with empty data' do
       node = described_class.new
       expect(node.type).to be_nil
       expect(node.attrs).to be_nil
-      expect(node.content).to eq([])
+      expect(node.content).to be_nil
       expect(node.marks).to be_nil
     end
 
+    # TODO: Update to lutaml-model
     it 'initializes with provided data' do
       data = {
         'type' => 'test_node',
@@ -47,29 +50,29 @@ RSpec.describe Prosereflect::Node do
   describe '#to_h' do
     it 'creates a hash representation with basic properties' do
       node = described_class.new({ 'type' => 'test_node' })
-      hash = node.to_h
+      hash = node.to_hash
 
       expect(hash).to be_a(Hash)
       expect(hash['type']).to eq('test_node')
     end
 
     it 'includes attrs when present' do
-      node = described_class.new({
-                                   'type' => 'test_node',
-                                   'attrs' => { 'key' => 'value' }
-                                 })
+      node = described_class.new(
+        type: Prosereflect::Text.new(text: 'Hello'),
+        attrs: [Prosereflect::Attribute::Href.new('https://example.com')]
+      )
 
-      hash = node.to_h
-      expect(hash['attrs']).to eq({ 'key' => 'value' })
+      hash = node.to_hash
+      expect(hash['attrs']).to eq([{ 'href' => 'https://example.com' }])
     end
 
     it 'includes marks when present' do
-      node = described_class.new({
-                                   'type' => 'test_node',
-                                   'marks' => [{ 'type' => 'bold' }]
-                                 })
+      node = described_class.new(
+        type: Prosereflect::Text.new(text: 'Hello'),
+        marks: [Prosereflect::Attribute::Bold.new]
+      )
 
-      hash = node.to_h
+      hash = node.to_hash
       expect(hash['marks']).to eq([{ 'type' => 'bold' }])
     end
 
@@ -79,7 +82,7 @@ RSpec.describe Prosereflect::Node do
                                    'content' => [{ 'type' => 'text', 'text' => 'Hello' }]
                                  })
 
-      hash = node.to_h
+      hash = node.to_hash
       expect(hash['content']).to be_an(Array)
       expect(hash['content'][0]['type']).to eq('text')
     end

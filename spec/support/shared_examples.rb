@@ -129,7 +129,7 @@ RSpec.shared_examples 'document creation' do
 
   it 'creates a document with attributes' do
     attrs = { 'version' => '1.0' }
-    document = Prosereflect::Document.create(attrs)
+    document = Prosereflect::Document.new(attrs: attrs)
     expect(document.attrs).to eq(attrs)
   end
 
