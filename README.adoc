@@ -1,0 +1,268 @@
+= prosemirror gem: Library for ProseMirror document trees
+
+image:https://img.shields.io/gem/v/prosemirror.svg["Gem Version", link="https://rubygems.org/gems/prosemirror"]
+image:https://github.com/metanorma/prosemirror/actions/workflows/rake.yml/badge.svg["Build Status", link="https://github.com/metanorma/prosemirror/actions/workflows/rake.yml"]
+image:https://img.shields.io/github/issues-pr-raw/metanorma/prosemirror.svg["Pull Requests", link="https://github.com/metanorma/prosemirror/pulls"]
+image:https://img.shields.io/github/commits-since/metanorma/prosemirror/latest.svg["Commits since latest",link="https://github.com/metanorma/prosemirror/releases"]
+
+== Purpose
+
+ProseMirror is a Ruby gem for working with the document structure used by the https://prosemirror.net/[ProseMirror JavaScript rich text editor].
+
+It provides a set of models and utilities for parsing, manipulating, and
+accessing the hierarchical document tree structure represented in ProseMirror's
+JSON/YAML format. This allows for convenient traversal and extraction of content
+from rich text documents.
+
+
+== Installation
+
+Add this line to your application's Gemfile:
+
+[source,ruby]
+----
+gem 'prosemirror'
+----
+
+And then execute:
+
+[source,shell]
+----
+$ bundle install
+----
+
+Or install it yourself as:
+
+[source,shell]
+----
+$ gem install prosemirror
+----
+
+== Usage
+
+=== Parsing ProseMirror documents
+
+==== From YAML
+
+[source,ruby]
+----
+require 'prosemirror'
+
+# Parse from YAML string or file
+yaml_content = File.read('document.yaml')
+document = Prosemirror::Parser.parse_document(yaml_content)
+
+# Access the document structure
+document.content.each do |node|
+  # Work with nodes
+end
+----
+
+==== From JSON
+
+[source,ruby]
+----
+require 'prosemirror'
+
+# Parse from JSON string or file
+json_content = File.read('document.json')
+document = Prosemirror::Parser.parse_document(json_content)
+----
+
+=== Navigating the document
+
+[source,ruby]
+----
+# Get all tables in the document
+tables = document.tables
+
+# Get all paragraphs
+paragraphs = document.paragraphs
+
+# Access the first table
+first_table = document.first_table
+
+# Access header row and data rows in a table
+header = first_table.header_row
+data_rows = first_table.data_rows
+
+# Access cells in a table
+cell = first_table.cell_at(0, 0)  # First data row, first column
+----
+
+=== Accessing content
+
+[source,ruby]
+----
+# Get text content from a paragraph
+paragraph = document.paragraphs.first
+text = paragraph.text_content
+
+# Get text content from a table cell
+cell = document.tables.first.cell_at(0, 0)
+cell_text = cell.text_content
+
+# Get cell content as separate lines
+lines = cell.lines
+----
+
+=== Finding nodes
+
+[source,ruby]
+----
+# Find the first node of a specific type
+table = document.find_first('table')
+paragraph = document.find_first('paragraph')
+
+# Find all nodes of a specific type
+tables = document.find_all('table')
+text_nodes = document.find_all('text')
+
+# Find child nodes of a specific type
+table_cells = table.find_children('table_cell')
+----
+
+== Data model
+
+The ProseMirror gem represents the document structure as a hierarchy of node
+objects.
+
+[source]
+----
++-------------------+
+|      Document     |
+|                   |
+| +content          |
++--------+----------+
+         |
+         | 1..*
++--------v----------+
+|        Node       |
+|                   |
+| -type             |
+| -attrs            |
+| -marks            |
+| +content          |
++-------------------+
+         |
+    +----+----+---------------------+
+    |         |                     |
++---v---+ +---v----------+  +-------v--------+
+|Table  | |  Paragraph   |  |     Text       |
+|       | |              |  |                |
++---+---+ +--------------+  +----------------+
+    |
+    |
++---v-----------+
+|   TableRow    |
+|               |
++---+-----------+
+    |
++---v-----------+
+|   TableCell   |
+|               |
++---------------+
+----
+
+== Classes
+
+=== Node
+
+Base class for all node types.
+
+`type`:: The node type (e.g., "doc", "paragraph", "text", "table")
+`content`:: A collection of child nodes
+`attrs`:: Attributes specific to the node type
+`marks`:: Formatting marks applied to the node
+
+=== Document
+
+Top-level container representing a ProseMirror document.
+
+`content`:: A collection of top-level nodes in the document
+
+=== Paragraph
+
+Represents a paragraph of text.
+
+`text_content`:: Returns the combined text content of all child text nodes
+
+=== Text
+
+Represents a text node.
+
+`text`:: The text content of the node
+
+=== Table
+
+Represents a table structure.
+
+`rows`:: All table rows
+`header_row`:: The first row (assumed to be the header)
+`data_rows`:: All rows except the header
+`cell_at(row_index, col_index)`:: Access a specific cell by position
+
+=== TableRow
+
+Represents a row in a table.
+
+`cells`:: All cells in the row
+
+=== TableCell
+
+Represents a cell in a table.
+
+`paragraphs`:: All paragraphs in the cell
+`text_content`:: All text content combined
+`lines`:: Text content split into separate lines
+
+
+== Development
+
+=== Adding test fixtures
+
+The repository includes a utility script `bin/extract-ituob-amendments.rb` to
+extract ProseMirror content from the ITU Operational Bulletin for test fixtures.
+
+Syntax:
+
+[source,shell]
+----
+$ bin/extract-ituob-amendments.rb {filename} {issue_number}
+----
+
+Where,
+
+`{filename}`:: The amendments YAML file to extract from. The script expects the
+`{filename}` file in the format used by the ITU Operational Bulletin data
+repository: https://github.com/ituob/itu-ob-data/
+`{issue_number}`:: The issue number to use in the generated file names.
+
+This command:
+
+. Extract ProseMirror content from the specified amendments file
+. Generate both YAML and JSON files in the current directory
+. Name files according to the pattern `ituob-<issue_number>-<publication>.<format>`
+
+These generated files can be moved to `spec/fixtures/ituob-<issue_number>/` to use in tests.
+
+
+[example]
+====
+[source,shell]
+----
+$ bin/extract-ituob-amendments.rb amendments.yaml 1000
+----
+====
+
+
+
+== Copyright
+
+This gem is developed, maintained and funded by
+https://www.ribose.com[Ribose Inc.]
+
+== License
+
+The gem is available as open source under the terms of the
+https://opensource.org/licenses/BSD-2-Clause[2-Clause BSD License].

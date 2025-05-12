@@ -14,6 +14,12 @@ module Prosemirror
     def self.parse(data)
       return nil unless data.is_a?(Hash)
 
+      parse_node(data)
+    end
+
+    def self.parse_node(data)
+      return nil unless data.is_a?(Hash)
+
       case data['type']
       when 'text'
         Text.new(data)
@@ -35,12 +41,13 @@ module Prosemirror
     end
 
     def self.parse_document(data)
-      return Document.new unless data
+      raise ArgumentError, 'Input must be a hash' if data.nil?
+      raise ArgumentError, 'Input must be a hash' unless data.is_a?(Hash)
 
       if data['content']
         Document.new(data)
       elsif data['contents'] && data['contents']['en'] && data['contents']['en']['content']
-        Document.new({'content' => data['contents']['en']['content']})
+        Document.new({ 'content' => data['contents']['en']['content'] })
       else
         Document.new
       end
