@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror::TableRow do
+RSpec.describe Prosereflect::TableRow do
   describe 'initialization' do
     it 'initializes as a table_row node' do
       row = described_class.new({ 'type' => 'table_row' })
@@ -32,7 +32,7 @@ RSpec.describe Prosemirror::TableRow do
       row.add_cell('Cell 2')
 
       expect(row.cells.size).to eq(2)
-      expect(row.cells).to all(be_a(Prosemirror::TableCell))
+      expect(row.cells).to all(be_a(Prosereflect::TableCell))
     end
 
     it 'returns empty array for row with no cells' do
@@ -47,7 +47,7 @@ RSpec.describe Prosemirror::TableRow do
       cell = row.add_cell('Test content')
 
       expect(row.cells.size).to eq(1)
-      expect(cell).to be_a(Prosemirror::TableCell)
+      expect(cell).to be_a(Prosereflect::TableCell)
       expect(cell.text_content).to eq('Test content')
     end
 
@@ -56,7 +56,7 @@ RSpec.describe Prosemirror::TableRow do
       cell = row.add_cell
 
       expect(row.cells.size).to eq(1)
-      expect(cell).to be_a(Prosemirror::TableCell)
+      expect(cell).to be_a(Prosereflect::TableCell)
       expect(cell.text_content).to eq('')
     end
   end

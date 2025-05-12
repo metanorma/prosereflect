@@ -4,7 +4,7 @@ require_relative 'node'
 require_relative 'text'
 require_relative 'hard_break'
 
-module Prosemirror
+module Prosereflect
   class Paragraph < Node
     def text_nodes
       content.select { |node| node.type == 'text' }

@@ -4,12 +4,12 @@ RSpec.shared_examples 'a parsable format' do |format|
   it "parses #{format} content correctly" do
     document = case format
                when :yaml
-                 Prosemirror::Parser.parse_document(YAML.safe_load(file_content))
+                 Prosereflect::Parser.parse_document(YAML.safe_load(file_content))
                when :json
-                 Prosemirror::Parser.parse_document(JSON.parse(file_content))
+                 Prosereflect::Parser.parse_document(JSON.parse(file_content))
                end
 
-    expect(document).to be_a(Prosemirror::Document)
+    expect(document).to be_a(Prosereflect::Document)
     expect(document.content).not_to be_empty
   end
 
@@ -23,7 +23,7 @@ RSpec.shared_examples 'a parsable format' do |format|
                     end
 
     # Create a document from the data
-    document = Prosemirror::Parser.parse_document(original_data)
+    document = Prosereflect::Parser.parse_document(original_data)
 
     # Convert back to the original format
     round_trip_data = case format
@@ -48,12 +48,12 @@ RSpec.shared_examples 'a document with tables' do
     document = case file_content
                when String
                  if file_content.strip.start_with?('{')
-                   Prosemirror::Parser.parse_document(JSON.parse(file_content))
+                   Prosereflect::Parser.parse_document(JSON.parse(file_content))
                  else
-                   Prosemirror::Parser.parse_document(YAML.safe_load(file_content))
+                   Prosereflect::Parser.parse_document(YAML.safe_load(file_content))
                  end
                else
-                 Prosemirror::Parser.parse_document(file_content)
+                 Prosereflect::Parser.parse_document(file_content)
                end
 
     expect(document.tables.size).to be > 0
@@ -63,12 +63,12 @@ RSpec.shared_examples 'a document with tables' do
     document = case file_content
                when String
                  if file_content.strip.start_with?('{')
-                   Prosemirror::Parser.parse_document(JSON.parse(file_content))
+                   Prosereflect::Parser.parse_document(JSON.parse(file_content))
                  else
-                   Prosemirror::Parser.parse_document(YAML.safe_load(file_content))
+                   Prosereflect::Parser.parse_document(YAML.safe_load(file_content))
                  end
                else
-                 Prosemirror::Parser.parse_document(file_content)
+                 Prosereflect::Parser.parse_document(file_content)
                end
 
     table = document.tables.first
@@ -82,12 +82,12 @@ RSpec.shared_examples 'document traversal' do
     document = case file_content
                when String
                  if file_content.strip.start_with?('{')
-                   Prosemirror::Parser.parse_document(JSON.parse(file_content))
+                   Prosereflect::Parser.parse_document(JSON.parse(file_content))
                  else
-                   Prosemirror::Parser.parse_document(YAML.safe_load(file_content))
+                   Prosereflect::Parser.parse_document(YAML.safe_load(file_content))
                  end
                else
-                 Prosemirror::Parser.parse_document(file_content)
+                 Prosereflect::Parser.parse_document(file_content)
                end
 
     expect(document.find_all('table').size).to be > 0
@@ -101,12 +101,12 @@ RSpec.shared_examples 'text content extraction' do
     document = case file_content
                when String
                  if file_content.strip.start_with?('{')
-                   Prosemirror::Parser.parse_document(JSON.parse(file_content))
+                   Prosereflect::Parser.parse_document(JSON.parse(file_content))
                  else
-                   Prosemirror::Parser.parse_document(YAML.safe_load(file_content))
+                   Prosereflect::Parser.parse_document(YAML.safe_load(file_content))
                  end
                else
-                 Prosemirror::Parser.parse_document(file_content)
+                 Prosereflect::Parser.parse_document(file_content)
                end
 
     # Get text from the first paragraph or table cell that contains text
@@ -121,33 +121,33 @@ end
 
 RSpec.shared_examples 'document creation' do
   it 'creates an empty document' do
-    document = Prosemirror::Document.create
-    expect(document).to be_a(Prosemirror::Document)
+    document = Prosereflect::Document.create
+    expect(document).to be_a(Prosereflect::Document)
     expect(document.type).to eq('doc')
     expect(document.content).to eq([])
   end
 
   it 'creates a document with attributes' do
     attrs = { 'version' => '1.0' }
-    document = Prosemirror::Document.create(attrs)
+    document = Prosereflect::Document.create(attrs)
     expect(document.attrs).to eq(attrs)
   end
 
   it 'adds paragraphs to a document' do
-    document = Prosemirror::Document.create
+    document = Prosereflect::Document.create
     paragraph = document.add_paragraph('Test paragraph')
 
     expect(document.content.size).to eq(1)
-    expect(paragraph).to be_a(Prosemirror::Paragraph)
+    expect(paragraph).to be_a(Prosereflect::Paragraph)
     expect(paragraph.text_content).to eq('Test paragraph')
   end
 
   it 'adds tables to a document' do
-    document = Prosemirror::Document.create
+    document = Prosereflect::Document.create
     table = document.add_table
 
     expect(document.content.size).to eq(1)
-    expect(table).to be_a(Prosemirror::Table)
+    expect(table).to be_a(Prosereflect::Table)
   end
 end
 
@@ -157,12 +157,12 @@ RSpec.shared_examples 'format parsing' do
     case file_content
     when String
       if file_content.strip.start_with?('{')
-        Prosemirror::Parser.parse_document(JSON.parse(file_content))
+        Prosereflect::Parser.parse_document(JSON.parse(file_content))
       else
-        Prosemirror::Parser.parse_document(YAML.safe_load(file_content))
+        Prosereflect::Parser.parse_document(YAML.safe_load(file_content))
       end
     else
-      Prosemirror::Parser.parse_document(file_content)
+      Prosereflect::Parser.parse_document(file_content)
     end
   end
 end
@@ -170,7 +170,7 @@ end
 RSpec.shared_examples 'format round-trip' do |format|
   it "maintains document structure after #{format} round-trip" do
     # Create a rich document
-    document = Prosemirror::Document.create
+    document = Prosereflect::Document.create
 
     # Add paragraph with formatted text
     para = document.add_paragraph('Plain text')
@@ -205,13 +205,13 @@ RSpec.shared_examples 'format round-trip' do |format|
     case format
     when :yaml
       yaml = doc.to_yaml
-      parsed = Prosemirror::Parser.parse_document(YAML.safe_load(yaml))
+      parsed = Prosereflect::Parser.parse_document(YAML.safe_load(yaml))
       # Compare structures
       expect(YAML.safe_load(parsed.to_yaml)).to be_equivalent_yaml(YAML.safe_load(doc.to_yaml))
       parsed
     when :json
       json = doc.to_json
-      parsed = Prosemirror::Parser.parse_document(JSON.parse(json))
+      parsed = Prosereflect::Parser.parse_document(JSON.parse(json))
       # Compare structures
       expect(JSON.parse(parsed.to_json)).to be_equivalent_json(JSON.parse(doc.to_json))
       parsed

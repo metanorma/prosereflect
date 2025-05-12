@@ -3,7 +3,7 @@
 require_relative 'node'
 require_relative 'paragraph'
 
-module Prosemirror
+module Prosereflect
   class TableCell < Node
     def paragraphs
       content.select { |node| node.type == 'paragraph' }

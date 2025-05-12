@@ -3,7 +3,7 @@
 require 'bundler/setup'
 require 'yaml'
 require 'json'
-require 'prosemirror'
+require 'prosereflect'
 
 # Load shared examples
 Dir[File.join(__dir__, 'support', '**', '*.rb')].sort.each { |f| require f }

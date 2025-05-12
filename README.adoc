@@ -1,13 +1,13 @@
-= prosemirror gem: Library for ProseMirror document trees
+= prosereflect gem: Library for ProseMirror documents
 
-image:https://img.shields.io/gem/v/prosemirror.svg["Gem Version", link="https://rubygems.org/gems/prosemirror"]
-image:https://github.com/metanorma/prosemirror/actions/workflows/rake.yml/badge.svg["Build Status", link="https://github.com/metanorma/prosemirror/actions/workflows/rake.yml"]
-image:https://img.shields.io/github/issues-pr-raw/metanorma/prosemirror.svg["Pull Requests", link="https://github.com/metanorma/prosemirror/pulls"]
-image:https://img.shields.io/github/commits-since/metanorma/prosemirror/latest.svg["Commits since latest",link="https://github.com/metanorma/prosemirror/releases"]
+image:https://img.shields.io/gem/v/prosereflect.svg["Gem Version", link="https://rubygems.org/gems/prosereflect"]
+image:https://github.com/metanorma/prosereflect/actions/workflows/rake.yml/badge.svg["Build Status", link="https://github.com/metanorma/prosereflect/actions/workflows/rake.yml"]
+image:https://img.shields.io/github/issues-pr-raw/metanorma/prosereflect.svg["Pull Requests", link="https://github.com/metanorma/prosereflect/pulls"]
+image:https://img.shields.io/github/commits-since/metanorma/prosereflect/latest.svg["Commits since latest",link="https://github.com/metanorma/prosereflect/releases"]
 
 == Purpose
 
-ProseMirror is a Ruby gem for working with the document structure used by the https://prosemirror.net/[ProseMirror JavaScript rich text editor].
+`prosereflect` is a Ruby gem for working with the document structure used by the https://prosemirror.net/[ProseMirror rich text editor].
 
 It provides a set of models and utilities for parsing, manipulating, and
 accessing the hierarchical document tree structure represented in ProseMirror's
@@ -21,7 +21,7 @@ Add this line to your application's Gemfile:
 
 [source,ruby]
 ----
-gem 'prosemirror'
+gem 'prosereflect'
 ----
 
 And then execute:
@@ -35,7 +35,7 @@ Or install it yourself as:
 
 [source,shell]
 ----
-$ gem install prosemirror
+$ gem install prosereflect
 ----
 
 == Usage
@@ -46,11 +46,11 @@ $ gem install prosemirror
 
 [source,ruby]
 ----
-require 'prosemirror'
+require 'prosereflect'
 
 # Parse from YAML string or file
 yaml_content = File.read('document.yaml')
-document = Prosemirror::Parser.parse_document(yaml_content)
+document = Prosereflect::Parser.parse_document(yaml_content)
 
 # Access the document structure
 document.content.each do |node|
@@ -62,11 +62,11 @@ end
 
 [source,ruby]
 ----
-require 'prosemirror'
+require 'prosereflect'
 
 # Parse from JSON string or file
 json_content = File.read('document.json')
-document = Prosemirror::Parser.parse_document(json_content)
+document = Prosereflect::Parser.parse_document(json_content)
 ----
 
 === Navigating the document
@@ -124,7 +124,7 @@ table_cells = table.find_children('table_cell')
 
 == Data model
 
-The ProseMirror gem represents the document structure as a hierarchy of node
+The prosereflect gem represents the document structure as a hierarchy of node
 objects.
 
 [source]

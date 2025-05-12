@@ -9,7 +9,7 @@ require_relative 'table_cell'
 require_relative 'hard_break'
 require_relative 'document'
 
-module Prosemirror
+module Prosereflect
   class Parser
     def self.parse(data)
       return nil unless data.is_a?(Hash)

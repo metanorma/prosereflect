@@ -3,7 +3,7 @@
 require_relative 'node'
 require_relative 'table_row'
 
-module Prosemirror
+module Prosereflect
   class Table < Node
     def rows
       content.select { |node| node.type == 'table_row' }

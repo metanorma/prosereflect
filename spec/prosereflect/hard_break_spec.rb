@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror::HardBreak do
+RSpec.describe Prosereflect::HardBreak do
   describe 'initialization' do
     it 'initializes as a hard_break node' do
       break_node = described_class.new({ 'type' => 'hard_break' })

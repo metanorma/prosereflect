@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Prosemirror
+module Prosereflect
   class Node
     attr_reader :type, :attrs, :marks
     attr_accessor :content

@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror::TableCell do
+RSpec.describe Prosereflect::TableCell do
   describe 'initialization' do
     it 'initializes as a table_cell node' do
       cell = described_class.new({ 'type' => 'table_cell' })
@@ -32,7 +32,7 @@ RSpec.describe Prosemirror::TableCell do
       cell.add_paragraph('Para 2')
 
       expect(cell.paragraphs.size).to eq(2)
-      expect(cell.paragraphs).to all(be_a(Prosemirror::Paragraph))
+      expect(cell.paragraphs).to all(be_a(Prosereflect::Paragraph))
     end
 
     it 'returns empty array for cell with no paragraphs' do
@@ -86,7 +86,7 @@ RSpec.describe Prosemirror::TableCell do
       paragraph = cell.add_paragraph('Test content')
 
       expect(cell.paragraphs.size).to eq(1)
-      expect(paragraph).to be_a(Prosemirror::Paragraph)
+      expect(paragraph).to be_a(Prosereflect::Paragraph)
       expect(paragraph.text_content).to eq('Test content')
     end
 
@@ -95,7 +95,7 @@ RSpec.describe Prosemirror::TableCell do
       paragraph = cell.add_paragraph
 
       expect(cell.paragraphs.size).to eq(1)
-      expect(paragraph).to be_a(Prosemirror::Paragraph)
+      expect(paragraph).to be_a(Prosereflect::Paragraph)
       expect(paragraph.text_content).to eq('')
     end
   end

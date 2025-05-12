@@ -120,15 +120,15 @@ Style/Documentation:
     - 'test/**/*'
     - 'e118_amendment.rb'
     - 'e118_entry.rb'
-    - 'lib/prosemirror/document.rb'
-    - 'lib/prosemirror/hard_break.rb'
-    - 'lib/prosemirror/node.rb'
-    - 'lib/prosemirror/paragraph.rb'
-    - 'lib/prosemirror/parser.rb'
-    - 'lib/prosemirror/table.rb'
-    - 'lib/prosemirror/table_cell.rb'
-    - 'lib/prosemirror/table_row.rb'
-    - 'lib/prosemirror/text.rb'
+    - 'lib/prosereflect/document.rb'
+    - 'lib/prosereflect/hard_break.rb'
+    - 'lib/prosereflect/node.rb'
+    - 'lib/prosereflect/paragraph.rb'
+    - 'lib/prosereflect/parser.rb'
+    - 'lib/prosereflect/table.rb'
+    - 'lib/prosereflect/table_cell.rb'
+    - 'lib/prosereflect/table_row.rb'
+    - 'lib/prosereflect/text.rb'
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
@@ -163,7 +163,7 @@ Style/NumericPredicate:
     - 'spec/**/*'
     - 'e118_amendment.rb'
     - 'e118_entry.rb'
-    - 'lib/prosemirror/table.rb'
+    - 'lib/prosereflect/table.rb'
 
 # Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
@@ -197,7 +197,7 @@ Style/SafeNavigation:
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Style/SlicingWithRange:
   Exclude:
-    - 'lib/prosemirror/table.rb'
+    - 'lib/prosereflect/table.rb'
 
 # Offense count: 38
 # This cop supports safe autocorrection (--autocorrect).
@@ -209,9 +209,9 @@ Style/StringLiterals:
     - 'Rakefile'
     - 'bin/console'
     - 'bin/extract-ituob-amendments.rb'
-    - 'lib/prosemirror.rb'
-    - 'lib/prosemirror/version.rb'
-    - 'prosemirror.gemspec'
+    - 'lib/prosereflect.rb'
+    - 'lib/prosereflect/version.rb'
+    - 'prosereflect.gemspec'
 
 # Offense count: 7
 # This cop supports unsafe autocorrection (--autocorrect-all).

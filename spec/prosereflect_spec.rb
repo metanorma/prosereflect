@@ -2,11 +2,11 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror do
+RSpec.describe Prosereflect do
   let(:fixtures_path) { File.join(__dir__, 'fixtures') }
 
   it 'has a version number' do
-    expect(Prosemirror::VERSION).not_to be nil
+    expect(Prosereflect::VERSION).not_to be nil
   end
 
   # Test YAML parsing for different fixtures

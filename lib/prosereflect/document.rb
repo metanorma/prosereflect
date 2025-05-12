@@ -2,7 +2,8 @@
 
 require_relative 'node'
 
-module Prosemirror
+module Prosereflect
+  # Document class represents a ProseMirror document.
   class Document < Node
     def initialize(data = {})
       super(data)

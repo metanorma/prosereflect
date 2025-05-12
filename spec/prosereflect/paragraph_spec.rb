@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror::Paragraph do
+RSpec.describe Prosereflect::Paragraph do
   describe 'initialization' do
     it 'initializes as a paragraph node' do
       paragraph = described_class.new({ 'type' => 'paragraph' })
@@ -32,7 +32,7 @@ RSpec.describe Prosemirror::Paragraph do
       paragraph.add_text('Second text')
 
       expect(paragraph.text_nodes.size).to eq(2)
-      expect(paragraph.text_nodes).to all(be_a(Prosemirror::Text))
+      expect(paragraph.text_nodes).to all(be_a(Prosereflect::Text))
     end
 
     it 'returns empty array for paragraph with no text nodes' do
@@ -69,7 +69,7 @@ RSpec.describe Prosemirror::Paragraph do
       paragraph.add_text('Text with ')
 
       # Add a custom node that is neither text nor hard_break
-      custom_node = Prosemirror::Node.create('custom_node')
+      custom_node = Prosereflect::Node.create('custom_node')
       custom_node.instance_eval do
         def text_content
           'custom content'
@@ -87,7 +87,7 @@ RSpec.describe Prosemirror::Paragraph do
       text_node = paragraph.add_text('Hello world')
 
       expect(paragraph.content.size).to eq(1)
-      expect(text_node).to be_a(Prosemirror::Text)
+      expect(text_node).to be_a(Prosereflect::Text)
       expect(text_node.text).to eq('Hello world')
     end
 
@@ -122,7 +122,7 @@ RSpec.describe Prosemirror::Paragraph do
       hard_break = paragraph.add_hard_break
 
       expect(paragraph.content.size).to eq(1)
-      expect(hard_break).to be_a(Prosemirror::HardBreak)
+      expect(hard_break).to be_a(Prosereflect::HardBreak)
     end
 
     it 'adds a hard break with marks' do

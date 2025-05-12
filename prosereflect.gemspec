@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
-require_relative 'lib/prosemirror/version'
+require_relative 'lib/prosereflect/version'
 
 all_files_in_git = Dir.chdir(File.expand_path(__dir__)) do
   `git ls-files -z`.split("\x0")
 end
 
 Gem::Specification.new do |spec|
-  spec.name = 'prosemirror'
-  spec.version = Prosemirror::VERSION
+  spec.name = 'prosereflect'
+  spec.version = Prosereflect::VERSION
   spec.authors = ['Ribose']
   spec.email = ['open.source@ribose.com']
 
-  spec.summary = 'Ruby model accessor for ProseMirror document trees.'
-  spec.homepage = 'https://github.com/metanorma/prosemirror'
+  spec.summary = 'Ruby model accessor for prosereflect document trees.'
+  spec.homepage = 'https://github.com/metanorma/prosereflect'
   spec.license = 'BSD-2-Clause'
   spec.required_ruby_version = Gem::Requirement.new('>= 2.6.0')
 

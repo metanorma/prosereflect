@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror::Parser do
+RSpec.describe Prosereflect::Parser do
   let(:fixtures_path) { File.join(__dir__, '..', 'fixtures') }
 
   describe '.parse_document' do
@@ -16,7 +16,7 @@ RSpec.describe Prosemirror::Parser do
 
           expect do
             document = described_class.parse_document(data)
-            expect(document).to be_a(Prosemirror::Document)
+            expect(document).to be_a(Prosereflect::Document)
           end.not_to raise_error
         end
       end
@@ -32,7 +32,7 @@ RSpec.describe Prosemirror::Parser do
 
           expect do
             document = described_class.parse_document(data)
-            expect(document).to be_a(Prosemirror::Document)
+            expect(document).to be_a(Prosereflect::Document)
           end.not_to raise_error
         end
       end
@@ -53,35 +53,35 @@ RSpec.describe Prosemirror::Parser do
     it 'creates the correct node type based on the input' do
       # Test document node
       doc_data = { 'type' => 'doc', 'content' => [] }
-      expect(described_class.parse_node(doc_data)).to be_a(Prosemirror::Document)
+      expect(described_class.parse_node(doc_data)).to be_a(Prosereflect::Document)
 
       # Test paragraph node
       para_data = { 'type' => 'paragraph', 'content' => [] }
-      expect(described_class.parse_node(para_data)).to be_a(Prosemirror::Paragraph)
+      expect(described_class.parse_node(para_data)).to be_a(Prosereflect::Paragraph)
 
       # Test text node
       text_data = { 'type' => 'text', 'text' => 'Hello' }
-      expect(described_class.parse_node(text_data)).to be_a(Prosemirror::Text)
+      expect(described_class.parse_node(text_data)).to be_a(Prosereflect::Text)
 
       # Test hard_break node
       break_data = { 'type' => 'hard_break' }
-      expect(described_class.parse_node(break_data)).to be_a(Prosemirror::HardBreak)
+      expect(described_class.parse_node(break_data)).to be_a(Prosereflect::HardBreak)
 
       # Test table node
       table_data = { 'type' => 'table', 'content' => [] }
-      expect(described_class.parse_node(table_data)).to be_a(Prosemirror::Table)
+      expect(described_class.parse_node(table_data)).to be_a(Prosereflect::Table)
 
       # Test table_row node
       row_data = { 'type' => 'table_row', 'content' => [] }
-      expect(described_class.parse_node(row_data)).to be_a(Prosemirror::TableRow)
+      expect(described_class.parse_node(row_data)).to be_a(Prosereflect::TableRow)
 
       # Test table_cell node
       cell_data = { 'type' => 'table_cell', 'content' => [] }
-      expect(described_class.parse_node(cell_data)).to be_a(Prosemirror::TableCell)
+      expect(described_class.parse_node(cell_data)).to be_a(Prosereflect::TableCell)
 
       # Test generic node
       generic_data = { 'type' => 'unknown_type' }
-      expect(described_class.parse_node(generic_data)).to be_a(Prosemirror::Node)
+      expect(described_class.parse_node(generic_data)).to be_a(Prosereflect::Node)
     end
 
     it 'handles nodes with content' do
@@ -95,11 +95,11 @@ RSpec.describe Prosemirror::Parser do
       }
 
       node = described_class.parse_node(data)
-      expect(node).to be_a(Prosemirror::Paragraph)
+      expect(node).to be_a(Prosereflect::Paragraph)
       expect(node.content.size).to eq(3)
-      expect(node.content[0]).to be_a(Prosemirror::Text)
-      expect(node.content[1]).to be_a(Prosemirror::HardBreak)
-      expect(node.content[2]).to be_a(Prosemirror::Text)
+      expect(node.content[0]).to be_a(Prosereflect::Text)
+      expect(node.content[1]).to be_a(Prosereflect::HardBreak)
+      expect(node.content[2]).to be_a(Prosereflect::Text)
     end
 
     it 'handles nodes with marks' do
@@ -110,7 +110,7 @@ RSpec.describe Prosemirror::Parser do
       }
 
       node = described_class.parse_node(data)
-      expect(node).to be_a(Prosemirror::Text)
+      expect(node).to be_a(Prosereflect::Text)
       expect(node.marks).to eq([{ 'type' => 'bold' }])
     end
 
@@ -122,7 +122,7 @@ RSpec.describe Prosemirror::Parser do
       }
 
       node = described_class.parse_node(data)
-      expect(node).to be_a(Prosemirror::TableCell)
+      expect(node).to be_a(Prosereflect::TableCell)
       expect(node.attrs).to eq({ 'colspan' => 2, 'rowspan' => 1 })
     end
   end

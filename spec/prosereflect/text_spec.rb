@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Prosemirror::Text do
+RSpec.describe Prosereflect::Text do
   describe 'initialization' do
     it 'initializes as a text node' do
       text = described_class.new({ 'type' => 'text', 'text' => 'Hello' })
@@ -78,7 +78,7 @@ RSpec.describe Prosemirror::Text do
   describe 'inheritance' do
     it 'is a Node' do
       text = described_class.new({ 'type' => 'text', 'text' => 'Test' })
-      expect(text).to be_a(Prosemirror::Node)
+      expect(text).to be_a(Prosereflect::Node)
     end
   end
 

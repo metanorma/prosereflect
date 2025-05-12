@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Prosemirror::Node do
+RSpec.describe Prosereflect::Node do
   describe 'initialization' do
     it 'initializes with empty data' do
       node = described_class.new
@@ -39,8 +39,8 @@ RSpec.describe Prosemirror::Node do
       parsed_content = node.parse_content(content_data)
 
       expect(parsed_content.size).to eq(2)
-      expect(parsed_content[0]).to be_a(Prosemirror::Text)
-      expect(parsed_content[1]).to be_a(Prosemirror::HardBreak)
+      expect(parsed_content[0]).to be_a(Prosereflect::Text)
+      expect(parsed_content[1]).to be_a(Prosereflect::HardBreak)
     end
   end
 
@@ -109,8 +109,8 @@ RSpec.describe Prosemirror::Node do
   describe '#find_first' do
     let(:node) do
       root = described_class.new({ 'type' => 'root' })
-      para = Prosemirror::Paragraph.new({ 'type' => 'paragraph' })
-      text = Prosemirror::Text.new({ 'type' => 'text', 'text' => 'Hello' })
+      para = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
+      text = Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Hello' })
 
       para.add_child(text)
       root.add_child(para)
@@ -124,12 +124,12 @@ RSpec.describe Prosemirror::Node do
 
     it 'finds a child node by type' do
       result = node.find_first('paragraph')
-      expect(result).to be_a(Prosemirror::Paragraph)
+      expect(result).to be_a(Prosereflect::Paragraph)
     end
 
     it 'finds a nested node by type' do
       result = node.find_first('text')
-      expect(result).to be_a(Prosemirror::Text)
+      expect(result).to be_a(Prosereflect::Text)
     end
 
     it 'returns nil if no matching node is found' do
@@ -162,11 +162,11 @@ RSpec.describe Prosemirror::Node do
     let(:node) do
       root = described_class.new({ 'type' => 'root' })
 
-      para1 = Prosemirror::Paragraph.new({ 'type' => 'paragraph' })
-      para1.add_child(Prosemirror::Text.new({ 'type' => 'text', 'text' => 'Text 1' }))
+      para1 = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
+      para1.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Text 1' }))
 
-      para2 = Prosemirror::Paragraph.new({ 'type' => 'paragraph' })
-      para2.add_child(Prosemirror::Text.new({ 'type' => 'text', 'text' => 'Text 2' }))
+      para2 = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
+      para2.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Text 2' }))
 
       root.add_child(para1)
       root.add_child(para2)
@@ -176,13 +176,13 @@ RSpec.describe Prosemirror::Node do
     it 'finds all nodes of a specific type' do
       paragraphs = node.find_all('paragraph')
       expect(paragraphs.size).to eq(2)
-      expect(paragraphs).to all(be_a(Prosemirror::Paragraph))
+      expect(paragraphs).to all(be_a(Prosereflect::Paragraph))
     end
 
     it 'finds all nested nodes of a specific type' do
       texts = node.find_all('text')
       expect(texts.size).to eq(2)
-      expect(texts).to all(be_a(Prosemirror::Text))
+      expect(texts).to all(be_a(Prosereflect::Text))
     end
 
     it 'returns empty array if no matching nodes are found' do
@@ -195,9 +195,9 @@ RSpec.describe Prosemirror::Node do
     let(:node) do
       root = described_class.new({ 'type' => 'root' })
 
-      root.add_child(Prosemirror::Paragraph.new({ 'type' => 'paragraph' }))
-      root.add_child(Prosemirror::Table.new({ 'type' => 'table' }))
-      root.add_child(Prosemirror::Paragraph.new({ 'type' => 'paragraph' }))
+      root.add_child(Prosereflect::Paragraph.new({ 'type' => 'paragraph' }))
+      root.add_child(Prosereflect::Table.new({ 'type' => 'table' }))
+      root.add_child(Prosereflect::Paragraph.new({ 'type' => 'paragraph' }))
 
       root
     end
@@ -205,7 +205,7 @@ RSpec.describe Prosemirror::Node do
     it 'finds direct children of a specific type' do
       paragraphs = node.find_children('paragraph')
       expect(paragraphs.size).to eq(2)
-      expect(paragraphs).to all(be_a(Prosemirror::Paragraph))
+      expect(paragraphs).to all(be_a(Prosereflect::Paragraph))
     end
 
     it 'returns empty array if no matching children are found' do
@@ -223,10 +223,10 @@ RSpec.describe Prosemirror::Node do
     it 'concatenates text content from all child nodes' do
       node = described_class.new({ 'type' => 'parent' })
 
-      para = Prosemirror::Paragraph.new({ 'type' => 'paragraph' })
-      para.add_child(Prosemirror::Text.new({ 'type' => 'text', 'text' => 'Hello' }))
-      para.add_child(Prosemirror::HardBreak.new({ 'type' => 'hard_break' }))
-      para.add_child(Prosemirror::Text.new({ 'type' => 'text', 'text' => 'World' }))
+      para = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
+      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Hello' }))
+      para.add_child(Prosereflect::HardBreak.new({ 'type' => 'hard_break' }))
+      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'World' }))
 
       node.add_child(para)
 
@@ -243,10 +243,10 @@ RSpec.describe Prosemirror::Node do
     it 'includes newlines for hard breaks' do
       node = described_class.new({ 'type' => 'parent' })
 
-      para = Prosemirror::Paragraph.new({ 'type' => 'paragraph' })
-      para.add_child(Prosemirror::Text.new({ 'type' => 'text', 'text' => 'Hello' }))
-      para.add_child(Prosemirror::HardBreak.new({ 'type' => 'hard_break' }))
-      para.add_child(Prosemirror::Text.new({ 'type' => 'text', 'text' => 'World' }))
+      para = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
+      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Hello' }))
+      para.add_child(Prosereflect::HardBreak.new({ 'type' => 'hard_break' }))
+      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'World' }))
 
       node.add_child(para)
 

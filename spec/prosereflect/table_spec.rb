@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror::Table do
+RSpec.describe Prosereflect::Table do
   describe 'initialization' do
     it 'initializes as a table node' do
       table = described_class.new({ 'type' => 'table' })
@@ -37,13 +37,13 @@ RSpec.describe Prosemirror::Table do
     describe '#rows' do
       it 'returns all rows' do
         expect(table.rows.size).to eq(3)
-        expect(table.rows).to all(be_a(Prosemirror::TableRow))
+        expect(table.rows).to all(be_a(Prosereflect::TableRow))
       end
     end
 
     describe '#header_row' do
       it 'returns the first row' do
-        expect(table.header_row).to be_a(Prosemirror::TableRow)
+        expect(table.header_row).to be_a(Prosereflect::TableRow)
         expect(table.header_row.cells.first.text_content).to eq('Header 1')
       end
     end
@@ -51,7 +51,7 @@ RSpec.describe Prosemirror::Table do
     describe '#data_rows' do
       it 'returns all rows except the header' do
         expect(table.data_rows.size).to eq(2)
-        expect(table.data_rows).to all(be_a(Prosemirror::TableRow))
+        expect(table.data_rows).to all(be_a(Prosereflect::TableRow))
         expect(table.data_rows.first.cells.first.text_content).to eq('Data 1')
       end
 
@@ -65,7 +65,7 @@ RSpec.describe Prosemirror::Table do
     describe '#cell_at' do
       it 'returns cell at specified position' do
         cell = table.cell_at(0, 1)
-        expect(cell).to be_a(Prosemirror::TableCell)
+        expect(cell).to be_a(Prosereflect::TableCell)
         expect(cell.text_content).to eq('Data 2')
       end
 
@@ -85,7 +85,7 @@ RSpec.describe Prosemirror::Table do
         header = table.add_header(['Col 1', 'Col 2'])
 
         expect(table.rows.size).to eq(1)
-        expect(header).to be_a(Prosemirror::TableRow)
+        expect(header).to be_a(Prosereflect::TableRow)
         expect(header.cells.size).to eq(2)
         expect(header.cells.map(&:text_content)).to eq(['Col 1', 'Col 2'])
       end
@@ -97,7 +97,7 @@ RSpec.describe Prosemirror::Table do
         row = table.add_row(['Data 1', 'Data 2'])
 
         expect(table.rows.size).to eq(1)
-        expect(row).to be_a(Prosemirror::TableRow)
+        expect(row).to be_a(Prosereflect::TableRow)
         expect(row.cells.size).to eq(2)
         expect(row.cells.map(&:text_content)).to eq(['Data 1', 'Data 2'])
       end

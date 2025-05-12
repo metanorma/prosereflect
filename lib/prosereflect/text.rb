@@ -2,7 +2,7 @@
 
 require_relative 'node'
 
-module Prosemirror
+module Prosereflect
   class Text < Node
     attr_reader :text
     attr_accessor :marks

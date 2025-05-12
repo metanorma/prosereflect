@@ -2,11 +2,11 @@
 
 require 'spec_helper'
 
-RSpec.describe Prosemirror::Document do
+RSpec.describe Prosereflect::Document do
   let(:fixtures_path) { File.join(__dir__, '..', 'fixtures') }
   let(:yaml_file) { File.join(fixtures_path, 'ituob-1000', 'ituob-1000-DP.yaml') }
   let(:file_content) { File.read(yaml_file) }
-  let(:document) { Prosemirror::Parser.parse_document(YAML.safe_load(file_content)) }
+  let(:document) { Prosereflect::Parser.parse_document(YAML.safe_load(file_content)) }
 
   describe 'basic properties' do
     it 'has the correct type' do
@@ -14,7 +14,7 @@ RSpec.describe Prosemirror::Document do
     end
 
     it 'is a node' do
-      expect(document).to be_a(Prosemirror::Node)
+      expect(document).to be_a(Prosereflect::Node)
     end
   end
 
@@ -40,7 +40,7 @@ RSpec.describe Prosemirror::Document do
       doc.add_paragraph('Second paragraph')
 
       expect(doc.paragraphs.size).to eq(2)
-      expect(doc.paragraphs).to all(be_a(Prosemirror::Paragraph))
+      expect(doc.paragraphs).to all(be_a(Prosereflect::Paragraph))
     end
   end
 
@@ -51,7 +51,7 @@ RSpec.describe Prosemirror::Document do
       doc.add_table
 
       expect(doc.tables.size).to eq(2)
-      expect(doc.tables).to all(be_a(Prosemirror::Table))
+      expect(doc.tables).to all(be_a(Prosereflect::Table))
     end
   end
 
@@ -79,7 +79,7 @@ RSpec.describe Prosemirror::Document do
       para = doc.add_paragraph('Test paragraph')
 
       expect(doc.paragraphs.size).to eq(1)
-      expect(para).to be_a(Prosemirror::Paragraph)
+      expect(para).to be_a(Prosereflect::Paragraph)
       expect(para.text_content).to eq('Test paragraph')
     end
 
@@ -88,7 +88,7 @@ RSpec.describe Prosemirror::Document do
       para = doc.add_paragraph
 
       expect(doc.paragraphs.size).to eq(1)
-      expect(para).to be_a(Prosemirror::Paragraph)
+      expect(para).to be_a(Prosereflect::Paragraph)
       expect(para.text_content).to eq('')
     end
   end
@@ -99,7 +99,7 @@ RSpec.describe Prosemirror::Document do
       table = doc.add_table
 
       expect(doc.tables.size).to eq(1)
-      expect(table).to be_a(Prosemirror::Table)
+      expect(table).to be_a(Prosereflect::Table)
     end
 
     it 'adds a table with attributes' do

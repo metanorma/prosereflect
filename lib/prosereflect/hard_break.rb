@@ -2,7 +2,7 @@
 
 require_relative 'node'
 
-module Prosemirror
+module Prosereflect
   class HardBreak < Node
     def text_content
       "\n"
