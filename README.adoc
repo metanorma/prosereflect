@@ -119,7 +119,7 @@ tables = document.find_all('table')
 text_nodes = document.find_all('text')
 
 # Find child nodes of a specific type
-table_cells = table.find_children('table_cell')
+table_cells = table.find_children(TableCell)
 ----
 
 == Data model

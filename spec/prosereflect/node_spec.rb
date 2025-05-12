@@ -206,13 +206,13 @@ RSpec.describe Prosereflect::Node do
     end
 
     it 'finds direct children of a specific type' do
-      paragraphs = node.find_children('paragraph')
+      paragraphs = node.find_children(Prosereflect::Paragraph)
       expect(paragraphs.size).to eq(2)
       expect(paragraphs).to all(be_a(Prosereflect::Paragraph))
     end
 
     it 'returns empty array if no matching children are found' do
-      result = node.find_children('nonexistent')
+      result = node.find_children(String)
       expect(result).to eq([])
     end
   end

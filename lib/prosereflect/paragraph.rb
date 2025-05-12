@@ -9,7 +9,7 @@ module Prosereflect
     PM_TYPE = 'paragraph'
 
     def text_nodes
-      content.select { |node| node.type == 'text' }
+      content.select { |node| node.is_a?(Text) }
     end
 
     def text_content

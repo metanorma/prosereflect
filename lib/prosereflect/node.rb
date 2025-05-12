@@ -67,7 +67,7 @@ module Prosereflect
     def find_children(node_type)
       return nil unless content
 
-      content.select { |child| child.type == node_type }
+      content.select { |child| child.is_a?(node_type) }
     end
 
     def text_content
