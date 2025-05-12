@@ -10,7 +10,8 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Link < Base
-      PM_TYPE_NAME = 'link'
+      attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+      PM_TYPE = 'link'
     end
   end
 end

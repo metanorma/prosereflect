@@ -143,20 +143,20 @@ RSpec.describe Prosereflect::Node do
 
   describe '.create' do
     it 'creates a node with the specified type' do
-      node = described_class.create('test_node')
+      node = described_class.new('test_node')
       expect(node.type).to eq('test_node')
     end
 
     it 'creates a node with attributes' do
       attrs = { 'key' => 'value' }
-      node = described_class.create('test_node', attrs)
+      node = described_class.new('test_node', attrs)
 
       expect(node.type).to eq('test_node')
       expect(node.attrs).to eq(attrs)
     end
 
     it 'initializes with empty content' do
-      node = described_class.create('test_node')
+      node = described_class.new('test_node')
       expect(node.content).to eq([])
     end
   end

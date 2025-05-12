@@ -6,10 +6,20 @@ require_relative 'mark'
 
 module Prosereflect
   class Node < Lutaml::Model::Serializable
-    attribute :type, :string
+    PM_TYPE = 'node'
+
+    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+
     attribute :attrs, Attribute::Base, polymorphic: true, collection: true
     attribute :marks, Mark::Base, polymorphic: true, collection: true
     attribute :content, Node, polymorphic: true, collection: true
+
+    key_value do
+      map 'type', to: :type, render_default: true
+      map 'attrs', to: :attrs
+      map 'marks', to: :marks
+      map 'content', to: :content
+    end
 
     # def initialize(data = {})
     #   type = data['type']
@@ -32,6 +42,8 @@ module Prosereflect
     end
 
     def find_first(node_type)
+      return nil unless content
+
       return self if type == node_type
 
       content.each do |child|
@@ -42,6 +54,8 @@ module Prosereflect
     end
 
     def find_all(node_type)
+      return nil unless content
+
       results = []
       results << self if type == node_type
       content.each do |child|
@@ -51,10 +65,14 @@ module Prosereflect
     end
 
     def find_children(node_type)
+      return nil unless content
+
       content.select { |child| child.type == node_type }
     end
 
     def text_content
+      return '' unless content
+
       content.map(&:text_content).join
     end
   end

@@ -12,7 +12,7 @@ RSpec.describe Prosereflect::TableCell do
 
   describe '.create' do
     it 'creates an empty table cell' do
-      cell = described_class.create
+      cell = described_class.new
       expect(cell).to be_a(described_class)
       expect(cell.type).to eq('table_cell')
       expect(cell.content).to be_empty
@@ -27,7 +27,7 @@ RSpec.describe Prosereflect::TableCell do
 
   describe '#paragraphs' do
     it 'returns all paragraphs in the cell' do
-      cell = described_class.create
+      cell = described_class.new
       cell.add_paragraph('Para 1')
       cell.add_paragraph('Para 2')
 
@@ -36,14 +36,14 @@ RSpec.describe Prosereflect::TableCell do
     end
 
     it 'returns empty array for cell with no paragraphs' do
-      cell = described_class.create
+      cell = described_class.new
       expect(cell.paragraphs).to eq([])
     end
   end
 
   describe '#text_content' do
     it 'returns concatenated text from all paragraphs with newlines' do
-      cell = described_class.create
+      cell = described_class.new
       cell.add_paragraph('First paragraph')
       cell.add_paragraph('Second paragraph')
 
@@ -51,14 +51,14 @@ RSpec.describe Prosereflect::TableCell do
     end
 
     it 'returns empty string for empty cell' do
-      cell = described_class.create
+      cell = described_class.new
       expect(cell.text_content).to eq('')
     end
   end
 
   describe '#lines' do
     it 'splits text content into lines' do
-      cell = described_class.create
+      cell = described_class.new
       cell.add_paragraph('Line 1')
       cell.add_paragraph('Line 2')
 
@@ -66,12 +66,12 @@ RSpec.describe Prosereflect::TableCell do
     end
 
     it 'returns empty array for empty cell' do
-      cell = described_class.create
+      cell = described_class.new
       expect(cell.lines).to eq([])
     end
 
     it 'handles multi-line paragraphs' do
-      cell = described_class.create
+      cell = described_class.new
       para = cell.add_paragraph('First line')
       para.add_hard_break
       para.add_text('Second line')
@@ -82,7 +82,7 @@ RSpec.describe Prosereflect::TableCell do
 
   describe '#add_paragraph' do
     it 'adds a paragraph with text' do
-      cell = described_class.create
+      cell = described_class.new
       paragraph = cell.add_paragraph('Test content')
 
       expect(cell.paragraphs.size).to eq(1)
@@ -91,7 +91,7 @@ RSpec.describe Prosereflect::TableCell do
     end
 
     it 'adds an empty paragraph' do
-      cell = described_class.create
+      cell = described_class.new
       paragraph = cell.add_paragraph
 
       expect(cell.paragraphs.size).to eq(1)
@@ -102,7 +102,7 @@ RSpec.describe Prosereflect::TableCell do
 
   describe 'serialization' do
     it 'converts to hash representation' do
-      cell = described_class.create
+      cell = described_class.new
       cell.add_paragraph('Test content')
 
       hash = cell.to_h

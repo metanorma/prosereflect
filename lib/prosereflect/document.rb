@@ -5,6 +5,7 @@ require_relative 'node'
 module Prosereflect
   # Document class represents a ProseMirror document.
   class Document < Node
+    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
     PM_TYPE = 'doc'
 
     def tables
