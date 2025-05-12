@@ -16,10 +16,6 @@ module Prosereflect
       @text || ''
     end
 
-    def text_content_with_breaks
-      @text || ''
-    end
-
     # Create a new text node
     def self.create(text, marks = nil)
       node = new({ 'type' => 'text', 'text' => text })
