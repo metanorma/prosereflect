@@ -196,9 +196,9 @@ RSpec.shared_examples 'format round-trip' do |format|
     expect(parsed_doc.find_all('hard_break').size).to eq(document.find_all('hard_break').size)
 
     # Verify table structure
-    table_in_parsed = parsed_doc.first_table
-    expect(table_in_parsed.rows.size).to eq(document.first_table.rows.size)
-    expect(table_in_parsed.header_row.cells.size).to eq(document.first_table.header_row.cells.size)
+    table_in_parsed = parsed_doc.find_first('table')
+    expect(table_in_parsed.rows.size).to eq(document.find_first('table').rows.size)
+    expect(table_in_parsed.header_row.cells.size).to eq(document.find_first('table').header_row.cells.size)
   end
 
   def round_trip_conversion(doc, format)

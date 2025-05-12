@@ -55,24 +55,6 @@ RSpec.describe Prosereflect::Document do
     end
   end
 
-  describe '#first_table' do
-    it 'returns the first table in the document' do
-      doc = described_class.create
-      table1 = doc.add_table
-      table1.add_header(['T1 Header'])
-
-      table2 = doc.add_table
-      table2.add_header(['T2 Header'])
-
-      expect(doc.first_table).to eq(table1)
-    end
-
-    it 'returns nil if no tables exist' do
-      doc = described_class.create
-      expect(doc.first_table).to be_nil
-    end
-  end
-
   describe '#add_paragraph' do
     it 'adds a paragraph with text' do
       doc = described_class.create

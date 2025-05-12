@@ -80,7 +80,7 @@ tables = document.tables
 paragraphs = document.paragraphs
 
 # Access the first table
-first_table = document.first_table
+first_table = document.find_first('table')
 
 # Access header row and data rows in a table
 header = first_table.header_row

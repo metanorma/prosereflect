@@ -18,14 +18,6 @@ module Prosereflect
       find_children('paragraph')
     end
 
-    def first_paragraph
-      find_first('paragraph')
-    end
-
-    def first_table
-      find_first('table')
-    end
-
     # Create a new empty document
     def self.create(attrs = nil)
       doc = new({ 'type' => 'doc', 'content' => [] })
