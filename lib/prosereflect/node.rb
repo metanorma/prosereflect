@@ -68,10 +68,5 @@ module Prosereflect
     def text_content
       content.map(&:text_content).join
     end
-
-    # Hard breaks should add a newline in text content
-    def text_content_with_breaks
-      content.map(&:text_content_with_breaks).join
-    end
   end
 end

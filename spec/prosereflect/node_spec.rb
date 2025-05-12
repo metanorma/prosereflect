@@ -233,24 +233,4 @@ RSpec.describe Prosereflect::Node do
       expect(node.text_content).to eq("Hello\nWorld")
     end
   end
-
-  describe '#text_content_with_breaks' do
-    it 'returns empty string for node without content' do
-      node = described_class.new({ 'type' => 'empty' })
-      expect(node.text_content_with_breaks).to eq('')
-    end
-
-    it 'includes newlines for hard breaks' do
-      node = described_class.new({ 'type' => 'parent' })
-
-      para = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
-      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Hello' }))
-      para.add_child(Prosereflect::HardBreak.new({ 'type' => 'hard_break' }))
-      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'World' }))
-
-      node.add_child(para)
-
-      expect(node.text_content_with_breaks).to eq("Hello\nWorld")
-    end
-  end
 end

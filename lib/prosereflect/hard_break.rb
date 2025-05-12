@@ -8,10 +8,6 @@ module Prosereflect
       "\n"
     end
 
-    def text_content_with_breaks
-      "\n"
-    end
-
     # Create a new hard break
     def self.create(marks = nil)
       node = new({ 'type' => 'hard_break' })
