@@ -5,6 +5,8 @@ require_relative 'paragraph'
 
 module Prosereflect
   class TableCell < Node
+    PM_TYPE = 'table_cell'
+
     def paragraphs
       content.select { |node| node.type == 'paragraph' }
     end
@@ -15,13 +17,6 @@ module Prosereflect
 
     def lines
       text_content.split("\n").map(&:strip).reject(&:empty?)
-    end
-
-    # Create a new table cell
-    def self.create(attrs = nil)
-      cell = new({ 'type' => 'table_cell', 'content' => [] })
-      cell.instance_variable_set(:@attrs, attrs) if attrs
-      cell
     end
 
     # Add a paragraph to the cell

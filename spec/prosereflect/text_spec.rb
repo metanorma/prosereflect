@@ -27,14 +27,14 @@ RSpec.describe Prosereflect::Text do
 
   describe '.create' do
     it 'creates a text node with content' do
-      text = described_class.create('Hello world')
+      text = described_class.new(text: 'Hello world')
       expect(text.type).to eq('text')
       expect(text.text).to eq('Hello world')
     end
 
     it 'creates a text node with marks' do
       marks = [{ 'type' => 'bold' }]
-      text = described_class.create('Bold text', marks)
+      text = described_class.new(text: 'Bold text', marks: marks)
 
       expect(text.text).to eq('Bold text')
       expect(text.marks).to eq(marks)

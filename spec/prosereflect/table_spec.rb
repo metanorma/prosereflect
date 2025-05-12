@@ -20,7 +20,7 @@ RSpec.describe Prosereflect::Table do
 
     it 'creates a table with attributes' do
       attrs = { 'width' => '100%' }
-      table = described_class.create(attrs)
+      table = described_class.new(attrs: attrs)
       expect(table.attrs).to eq(attrs)
     end
   end

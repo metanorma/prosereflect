@@ -20,7 +20,7 @@ RSpec.describe Prosereflect::TableCell do
 
     it 'creates a table cell with attributes' do
       attrs = { 'colspan' => 2, 'rowspan' => 1 }
-      cell = described_class.create(attrs)
+      cell = described_class.new(attrs: attrs)
       expect(cell.attrs).to eq(attrs)
     end
   end

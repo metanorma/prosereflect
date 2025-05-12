@@ -2,6 +2,8 @@
 
 require_relative 'prosereflect/version'
 require_relative 'prosereflect/node'
+require_relative 'prosereflect/mark'
+require_relative 'prosereflect/attribute'
 require_relative 'prosereflect/text'
 require_relative 'prosereflect/paragraph'
 require_relative 'prosereflect/hard_break'

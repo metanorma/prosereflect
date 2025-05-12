@@ -6,6 +6,8 @@ require_relative 'hard_break'
 
 module Prosereflect
   class Paragraph < Node
+    PM_TYPE = 'paragraph'
+
     def text_nodes
       content.select { |node| node.type == 'text' }
     end
@@ -15,8 +17,6 @@ module Prosereflect
       content.each do |node|
         result += if node.type == 'text'
                     node.text_content
-                  elsif node.type == 'hard_break'
-                    "\n"
                   else
                     node.text_content
                   end
@@ -24,25 +24,18 @@ module Prosereflect
       result
     end
 
-    # Create a new paragraph
-    def self.create(attrs = nil)
-      para = new({ 'type' => 'paragraph', 'content' => [] })
-      para.instance_variable_set(:@attrs, attrs) if attrs
-      para
-    end
-
     # Add text to the paragraph
     def add_text(text, marks = nil)
       return if text.nil? || text.empty?
 
-      text_node = Text.create(text, marks)
+      text_node = Text.new(text: text, marks: marks)
       add_child(text_node)
       text_node
     end
 
     # Add a hard break to the paragraph
     def add_hard_break(marks = nil)
-      hard_break = HardBreak.create(marks)
+      hard_break = HardBreak.new(marks: marks)
       add_child(hard_break)
       hard_break
     end

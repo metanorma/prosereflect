@@ -19,7 +19,7 @@ RSpec.describe Prosereflect::HardBreak do
 
     it 'creates a hard break with marks' do
       marks = [{ 'type' => 'bold' }]
-      break_node = described_class.create(marks)
+      break_node = described_class.new(marks: marks)
       expect(break_node.marks).to eq(marks)
     end
   end
@@ -40,7 +40,7 @@ RSpec.describe Prosereflect::HardBreak do
 
     it 'includes marks in hash representation' do
       marks = [{ 'type' => 'italic' }]
-      break_node = described_class.create(marks)
+      break_node = described_class.new(marks: marks)
       hash = break_node.to_h
       expect(hash).to eq({
                            'type' => 'hard_break',
