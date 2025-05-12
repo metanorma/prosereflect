@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative 'node'
+require_relative 'table'
+require_relative 'paragraph'
 
 module Prosereflect
   # Document class represents a ProseMirror document.
@@ -9,11 +11,11 @@ module Prosereflect
     PM_TYPE = 'doc'
 
     def tables
-      find_children('table')
+      find_children(Table)
     end
 
     def paragraphs
-      find_children('paragraph')
+      find_children(Paragraph)
     end
 
     # Add a paragraph with text to the document
