@@ -6,7 +6,8 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Code < Base
-      PM_TYPE_NAME = 'code'
+      attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+      PM_TYPE = 'code'
     end
   end
 end

@@ -12,7 +12,7 @@ RSpec.describe Prosereflect::Table do
 
   describe '.create' do
     it 'creates an empty table' do
-      table = described_class.create
+      table = described_class.new
       expect(table).to be_a(described_class)
       expect(table.type).to eq('table')
       expect(table.content).to be_empty
@@ -27,7 +27,7 @@ RSpec.describe Prosereflect::Table do
 
   describe 'row access methods' do
     let(:table) do
-      t = described_class.create
+      t = described_class.new
       t.add_header(['Header 1', 'Header 2'])
       t.add_row(['Data 1', 'Data 2'])
       t.add_row(['Data 3', 'Data 4'])
@@ -56,7 +56,7 @@ RSpec.describe Prosereflect::Table do
       end
 
       it 'returns empty array if there are no data rows' do
-        table = described_class.create
+        table = described_class.new
         table.add_header(['Header'])
         expect(table.data_rows).to eq([])
       end
@@ -81,7 +81,7 @@ RSpec.describe Prosereflect::Table do
   describe 'table building methods' do
     describe '#add_header' do
       it 'adds a header row with cells' do
-        table = described_class.create
+        table = described_class.new
         header = table.add_header(['Col 1', 'Col 2'])
 
         expect(table.rows.size).to eq(1)
@@ -93,7 +93,7 @@ RSpec.describe Prosereflect::Table do
 
     describe '#add_row' do
       it 'adds a row with cells' do
-        table = described_class.create
+        table = described_class.new
         row = table.add_row(['Data 1', 'Data 2'])
 
         expect(table.rows.size).to eq(1)
@@ -103,7 +103,7 @@ RSpec.describe Prosereflect::Table do
       end
 
       it 'adds an empty row when no data provided' do
-        table = described_class.create
+        table = described_class.new
         row = table.add_row
 
         expect(table.rows.size).to eq(1)
@@ -113,7 +113,7 @@ RSpec.describe Prosereflect::Table do
 
     describe '#add_rows' do
       it 'adds multiple rows at once' do
-        table = described_class.create
+        table = described_class.new
         table.add_rows([
                          ['Row 1, Cell 1', 'Row 1, Cell 2'],
                          ['Row 2, Cell 1', 'Row 2, Cell 2']
@@ -130,7 +130,7 @@ RSpec.describe Prosereflect::Table do
 
   describe 'serialization' do
     it 'converts to hash representation' do
-      table = described_class.create
+      table = described_class.new
       table.add_header(['Col 1', 'Col 2'])
       table.add_row(['Data 1', 'Data 2'])
 

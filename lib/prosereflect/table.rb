@@ -4,6 +4,9 @@ require_relative 'node'
 require_relative 'table_row'
 
 module Prosereflect
+  # TODO: support for table attributes
+  # Table class represents a ProseMirror table.
+  # It contains rows, each of which can contain cells.
   class Table < Node
     PM_TYPE = 'table'
 

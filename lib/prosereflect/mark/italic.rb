@@ -7,7 +7,8 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Italic < Base
-      PM_TYPE_NAME = 'italic'
+      attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+      PM_TYPE = 'italic'
     end
   end
 end

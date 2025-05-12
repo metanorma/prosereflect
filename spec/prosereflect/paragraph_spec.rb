@@ -12,7 +12,7 @@ RSpec.describe Prosereflect::Paragraph do
 
   describe '.create' do
     it 'creates an empty paragraph' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       expect(paragraph).to be_a(described_class)
       expect(paragraph.type).to eq('paragraph')
       expect(paragraph.content).to be_empty
@@ -27,7 +27,7 @@ RSpec.describe Prosereflect::Paragraph do
 
   describe '#text_nodes' do
     it 'returns all text nodes in the paragraph' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       paragraph.add_text('First text')
       paragraph.add_text('Second text')
 
@@ -36,14 +36,14 @@ RSpec.describe Prosereflect::Paragraph do
     end
 
     it 'returns empty array for paragraph with no text nodes' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       expect(paragraph.text_nodes).to eq([])
     end
   end
 
   describe '#text_content' do
     it 'returns concatenated text from all text nodes' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       paragraph.add_text('First text')
       paragraph.add_text(' Second text')
 
@@ -51,12 +51,12 @@ RSpec.describe Prosereflect::Paragraph do
     end
 
     it 'returns empty string for empty paragraph' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       expect(paragraph.text_content).to eq('')
     end
 
     it 'handles hard breaks' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       paragraph.add_text('First line')
       paragraph.add_hard_break
       paragraph.add_text('Second line')
@@ -65,7 +65,7 @@ RSpec.describe Prosereflect::Paragraph do
     end
 
     xit 'handles mixed content types' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       paragraph.add_text('Text with ')
 
       # Add a custom node that is neither text nor hard_break
@@ -83,7 +83,7 @@ RSpec.describe Prosereflect::Paragraph do
 
   describe '#add_text' do
     it 'adds text to the paragraph' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       text_node = paragraph.add_text('Hello world')
 
       expect(paragraph.content.size).to eq(1)
@@ -92,7 +92,7 @@ RSpec.describe Prosereflect::Paragraph do
     end
 
     it 'adds text with marks' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       marks = [{ 'type' => 'bold' }]
       text_node = paragraph.add_text('Bold text', marks)
 
@@ -100,7 +100,7 @@ RSpec.describe Prosereflect::Paragraph do
     end
 
     it 'does not add empty text' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       result = paragraph.add_text('')
 
       expect(paragraph.content).to be_empty
@@ -108,7 +108,7 @@ RSpec.describe Prosereflect::Paragraph do
     end
 
     it 'does not add nil text' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       result = paragraph.add_text(nil)
 
       expect(paragraph.content).to be_empty
@@ -118,7 +118,7 @@ RSpec.describe Prosereflect::Paragraph do
 
   describe '#add_hard_break' do
     it 'adds a hard break to the paragraph' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       hard_break = paragraph.add_hard_break
 
       expect(paragraph.content.size).to eq(1)
@@ -126,7 +126,7 @@ RSpec.describe Prosereflect::Paragraph do
     end
 
     it 'adds a hard break with marks' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       marks = [{ 'type' => 'italic' }]
       hard_break = paragraph.add_hard_break(marks)
 
@@ -136,7 +136,7 @@ RSpec.describe Prosereflect::Paragraph do
 
   describe 'serialization' do
     it 'converts to hash representation' do
-      paragraph = described_class.create
+      paragraph = described_class.new
       paragraph.add_text('Hello')
       paragraph.add_hard_break
       paragraph.add_text('World')

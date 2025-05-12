@@ -7,7 +7,8 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Bold < Base
-      PM_TYPE_NAME = 'bold'
+      attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+      PM_TYPE = 'bold'
     end
   end
 end

@@ -12,7 +12,7 @@ RSpec.describe Prosereflect::TableRow do
 
   describe '.create' do
     it 'creates an empty table row' do
-      row = described_class.create
+      row = described_class.new
       expect(row).to be_a(described_class)
       expect(row.type).to eq('table_row')
       expect(row.content).to be_empty
@@ -27,7 +27,7 @@ RSpec.describe Prosereflect::TableRow do
 
   describe '#cells' do
     it 'returns all cells in the row' do
-      row = described_class.create
+      row = described_class.new
       row.add_cell('Cell 1')
       row.add_cell('Cell 2')
 
@@ -36,14 +36,14 @@ RSpec.describe Prosereflect::TableRow do
     end
 
     it 'returns empty array for row with no cells' do
-      row = described_class.create
+      row = described_class.new
       expect(row.cells).to eq([])
     end
   end
 
   describe '#add_cell' do
     it 'adds a cell with text content' do
-      row = described_class.create
+      row = described_class.new
       cell = row.add_cell('Test content')
 
       expect(row.cells.size).to eq(1)
@@ -52,7 +52,7 @@ RSpec.describe Prosereflect::TableRow do
     end
 
     it 'adds an empty cell' do
-      row = described_class.create
+      row = described_class.new
       cell = row.add_cell
 
       expect(row.cells.size).to eq(1)
@@ -63,7 +63,7 @@ RSpec.describe Prosereflect::TableRow do
 
   describe 'serialization' do
     it 'converts to hash representation' do
-      row = described_class.create
+      row = described_class.new
       row.add_cell('Cell 1')
       row.add_cell('Cell 2')
 
