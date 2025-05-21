@@ -10,8 +10,11 @@ require_relative 'prosereflect/hard_break'
 require_relative 'prosereflect/table'
 require_relative 'prosereflect/table_row'
 require_relative 'prosereflect/table_cell'
+require_relative 'prosereflect/heading'
 require_relative 'prosereflect/document'
 require_relative 'prosereflect/parser'
+require_relative 'prosereflect/input/html'
+require_relative 'prosereflect/output/html'
 
 module Prosereflect
   class Error < StandardError; end

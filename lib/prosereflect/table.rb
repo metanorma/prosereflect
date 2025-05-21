@@ -9,8 +9,28 @@ module Prosereflect
   # It contains rows, each of which can contain cells.
   class Table < Node
     PM_TYPE = 'table'
+    
+    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
 
-    attribute :rows, TableRow, collection: true
+    key_value do
+      map 'type', to: :type, render_default: true
+      map 'content', to: :content
+      map 'attrs', to: :attrs
+    end
+    
+    def initialize(attributes = {})
+      attributes[:content] ||= []
+      super
+    end
+
+    def self.create(attrs = nil)
+      new(attrs: attrs, content: [])
+    end
+
+    def rows
+      return [] unless content
+      content
+    end
 
     def header_row
       rows.first
@@ -32,7 +52,7 @@ module Prosereflect
 
     # Add a header row to the table
     def add_header(header_cells)
-      row = TableRow.new
+      row = TableRow.create
       header_cells.each do |cell_content|
         row.add_cell(cell_content)
       end
@@ -42,7 +62,7 @@ module Prosereflect
 
     # Add a data row to the table
     def add_row(cell_contents = [])
-      row = TableRow.new
+      row = TableRow.create
       cell_contents.each do |cell_content|
         row.add_cell(cell_content)
       end

@@ -27,7 +27,7 @@ RSpec.describe Prosereflect::Document do
     end
 
     it 'creates a document with attributes' do
-      attrs = [Prosereflect::Attribute::Id.new(id: '1')]
+      attrs = { 'id' => '1' }
       doc = described_class.new(attrs: attrs)
       expect(doc.attrs).to eq(attrs)
     end
