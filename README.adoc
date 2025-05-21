@@ -122,6 +122,58 @@ text_nodes = document.find_all('text')
 table_cells = table.find_children(TableCell)
 ----
 
+=== HTML Conversion
+
+The gem provides functionality to convert between HTML and ProseMirror document models.
+
+==== From HTML
+
+[source,ruby]
+----
+require 'prosereflect'
+
+# Parse from HTML string
+html_content = '<p>This is a <strong>bold</strong> text in a paragraph.</p>'
+document = Prosereflect::Input::Html.parse(html_content)
+
+# Access the document structure
+paragraph = document.paragraphs.first
+text_content = paragraph.text_content # "This is a bold text in a paragraph."
+----
+
+==== To HTML
+
+[source,ruby]
+----
+require 'prosereflect'
+
+# Create a document
+document = Prosereflect::Document.create
+paragraph = document.add_paragraph('Plain text')
+paragraph.add_text(' with bold', [Prosereflect::Mark::Bold.new])
+
+# Convert to HTML
+html = Prosereflect::Output::Html.convert(document)
+# => "<html><body><p>Plain text<strong> with bold</strong></p></body></html>"
+----
+
+==== Round-trip Conversion
+
+[source,ruby]
+----
+# Start with HTML
+original_html = '<p>This is <em>styled</em> text.</p>'
+
+# Convert to document model
+document = Prosereflect::Input::Html.parse(original_html)
+
+# Modify the document if needed
+document.paragraphs.first.add_text(' with additions')
+
+# Convert back to HTML
+modified_html = Prosereflect::Output::Html.convert(document)
+----
+
 == Data model
 
 The prosereflect gem represents the document structure as a hierarchy of node

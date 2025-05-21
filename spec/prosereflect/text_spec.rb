@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'spec_helper'
+
 RSpec.describe Prosereflect::Text do
   describe 'initialization' do
     it 'initializes as a text node' do
@@ -14,12 +16,10 @@ RSpec.describe Prosereflect::Text do
     end
 
     it 'initializes with marks' do
-      marks = [{ 'type' => 'bold' }, { 'type' => 'italic' }]
-      text = described_class.new({
-                                   'type' => 'text',
-                                   'text' => 'Formatted text',
-                                   'marks' => marks
-                                 })
+      bold_mark = Prosereflect::Mark::Base.new(type: 'bold')
+      italic_mark = Prosereflect::Mark::Base.new(type: 'italic')
+      marks = [bold_mark, italic_mark]
+      text = described_class.new(text: 'Formatted text', marks: marks)
 
       expect(text.marks).to eq(marks)
     end
@@ -33,7 +33,8 @@ RSpec.describe Prosereflect::Text do
     end
 
     it 'creates a text node with marks' do
-      marks = [{ 'type' => 'bold' }]
+      mark = Prosereflect::Mark::Base.new(type: 'bold')
+      marks = [mark]
       text = described_class.new(text: 'Bold text', marks: marks)
 
       expect(text.text).to eq('Bold text')
@@ -63,15 +64,12 @@ RSpec.describe Prosereflect::Text do
     end
 
     it 'includes marks in hash representation when present' do
-      marks = [{ 'type' => 'bold' }]
-      text = described_class.new({
-                                   'type' => 'text',
-                                   'text' => 'Bold text',
-                                   'marks' => marks
-                                 })
+      mark = Prosereflect::Mark::Base.new(type: 'bold')
+      marks = [mark]
+      text = described_class.new(text: 'Bold text', marks: marks)
 
       hash = text.to_h
-      expect(hash['marks']).to eq(marks)
+      expect(hash['marks']).to eq([{ 'type' => 'bold' }])
     end
   end
 
@@ -84,33 +82,23 @@ RSpec.describe Prosereflect::Text do
 
   describe 'with marks' do
     it 'can have multiple marks' do
-      marks = [
-        { 'type' => 'bold' },
-        { 'type' => 'italic' },
-        { 'type' => 'underline' }
-      ]
+      bold_mark = Prosereflect::Mark::Base.new(type: 'bold')
+      italic_mark = Prosereflect::Mark::Base.new(type: 'italic')
+      underline_mark = Prosereflect::Mark::Base.new(type: 'underline')
+      marks = [bold_mark, italic_mark, underline_mark]
 
-      text = described_class.new({
-                                   'type' => 'text',
-                                   'text' => 'Formatted text',
-                                   'marks' => marks
-                                 })
+      text = described_class.new(text: 'Formatted text', marks: marks)
 
       expect(text.marks.size).to eq(3)
     end
 
     it 'can have marks with attributes' do
-      marks = [
-        { 'type' => 'link', 'attrs' => { 'href' => 'https://example.com' } }
-      ]
+      link_mark = Prosereflect::Mark::Base.new(type: 'link', attrs: { 'href' => 'https://example.com' })
+      marks = [link_mark]
 
-      text = described_class.new({
-                                   'type' => 'text',
-                                   'text' => 'Link text',
-                                   'marks' => marks
-                                 })
+      text = described_class.new(text: 'Link text', marks: marks)
 
-      expect(text.marks[0]['attrs']['href']).to eq('https://example.com')
+      expect(text.marks[0].attrs['href']).to eq('https://example.com')
     end
   end
 end

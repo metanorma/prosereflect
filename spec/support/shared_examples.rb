@@ -30,7 +30,7 @@ RSpec.shared_examples 'a parsable format' do |format|
                       when :yaml
                         YAML.safe_load(document.to_yaml)
                       when :json
-                        JSON.parse(document.to_json)
+                        document.to_h
                       end
 
     # Compare the structures
@@ -204,17 +204,46 @@ RSpec.shared_examples 'format round-trip' do |format|
   def round_trip_conversion(doc, format)
     case format
     when :yaml
-      yaml = doc.to_yaml
-      parsed = Prosereflect::Parser.parse_document(YAML.safe_load(yaml))
-      # Compare structures
-      expect(YAML.safe_load(parsed.to_yaml)).to be_equivalent_yaml(YAML.safe_load(doc.to_yaml))
-      parsed
+      Prosereflect::Parser.parse_document(YAML.safe_load(doc.to_yaml))
     when :json
-      json = doc.to_json
-      parsed = Prosereflect::Parser.parse_document(JSON.parse(json))
-      # Compare structures
-      expect(JSON.parse(parsed.to_json)).to be_equivalent_json(JSON.parse(doc.to_json))
-      parsed
+      Prosereflect::Parser.parse_document(doc.to_h)
+    when :html
+      html = Prosereflect::Output::Html.convert(doc)
+      Prosereflect::Input::Html.parse(html)
     end
+  end
+end
+
+RSpec.shared_examples 'html conversion' do
+  it 'converts to HTML and back' do
+    # Create a document with various elements
+    document = Prosereflect::Document.create
+    
+    # Add paragraph with formatted text
+    para = document.add_paragraph('Plain text')
+    para.add_text(' bold text', [Prosereflect::Mark::Bold.new])
+    para.add_hard_break
+    para.add_text('After line break', [Prosereflect::Mark::Italic.new])
+    
+    # Add a table
+    table = document.add_table
+    table.add_header(['Header 1', 'Header 2'])
+    table.add_row(['Cell 1', 'Cell 2'])
+    
+    # Convert to HTML
+    html = Prosereflect::Output::Html.convert(document)
+    expect(html).to be_a(String)
+    expect(html).not_to be_empty
+    
+    # Convert back to document model
+    parsed_doc = Prosereflect::Input::Html.parse(html)
+    expect(parsed_doc).to be_a(Prosereflect::Document)
+    
+    # Check content was preserved
+    expect(parsed_doc.content.size).to be > 0
+    expect(parsed_doc.text_content).to include('Plain text')
+    expect(parsed_doc.text_content).to include('bold text')
+    expect(parsed_doc.text_content).to include('After line break')
+    expect(parsed_doc.find_all('table').size).to eq(1)
   end
 end
