@@ -53,5 +53,10 @@ RSpec.describe Prosereflect do
     context 'with JSON format' do
       include_examples 'format round-trip', :json
     end
+
+    context 'with HTML format' do
+      include_examples 'format round-trip', :html
+      include_examples 'html conversion'
+    end
   end
 end

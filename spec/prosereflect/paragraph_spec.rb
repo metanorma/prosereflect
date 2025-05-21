@@ -93,7 +93,8 @@ RSpec.describe Prosereflect::Paragraph do
 
     it 'adds text with marks' do
       paragraph = described_class.new
-      marks = [{ 'type' => 'bold' }]
+      mark = Prosereflect::Mark::Base.new(type: 'bold')
+      marks = [mark]
       text_node = paragraph.add_text('Bold text', marks)
 
       expect(text_node.marks).to eq(marks)
@@ -127,7 +128,8 @@ RSpec.describe Prosereflect::Paragraph do
 
     it 'adds a hard break with marks' do
       paragraph = described_class.new
-      marks = [{ 'type' => 'italic' }]
+      mark = Prosereflect::Mark::Base.new(type: 'italic')
+      marks = [mark]
       hard_break = paragraph.add_hard_break(marks)
 
       expect(hard_break.marks).to eq(marks)
