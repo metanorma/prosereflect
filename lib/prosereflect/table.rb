@@ -9,7 +9,7 @@ module Prosereflect
   # It contains rows, each of which can contain cells.
   class Table < Node
     PM_TYPE = 'table'
-    
+
     attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
 
     key_value do
@@ -17,7 +17,7 @@ module Prosereflect
       map 'content', to: :content
       map 'attrs', to: :attrs
     end
-    
+
     def initialize(attributes = {})
       attributes[:content] ||= []
       super
@@ -29,6 +29,7 @@ module Prosereflect
 
     def rows
       return [] unless content
+
       content
     end
 

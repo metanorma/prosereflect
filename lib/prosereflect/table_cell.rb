@@ -26,6 +26,7 @@ module Prosereflect
 
     def paragraphs
       return [] unless content
+
       content.select { |node| node.is_a?(Paragraph) }
     end
 

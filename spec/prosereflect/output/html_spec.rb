@@ -6,7 +6,7 @@ RSpec.describe Prosereflect::Output::Html do
   describe '.convert' do
     it 'converts a simple document to HTML' do
       document = Prosereflect::Document.new
-      paragraph = document.add_paragraph('This is a test paragraph.')
+      document.add_paragraph('This is a test paragraph.')
 
       html = described_class.convert(document)
 
@@ -39,11 +39,11 @@ RSpec.describe Prosereflect::Output::Html do
       table = document.add_table
 
       # Add header row
-      header_row = table.add_header(['Header 1', 'Header 2'])
+      table.add_header(['Header 1', 'Header 2'])
 
       # Add data rows
-      row1 = table.add_row(['Row 1, Cell 1', 'Row 1, Cell 2'])
-      row2 = table.add_row(['Row 2, Cell 1', 'Row 2, Cell 2'])
+      table.add_row(['Row 1, Cell 1', 'Row 1, Cell 2'])
+      table.add_row(['Row 2, Cell 1', 'Row 2, Cell 2'])
 
       html = described_class.convert(document)
 
@@ -90,7 +90,7 @@ RSpec.describe Prosereflect::Output::Html do
       document = Prosereflect::Document.new
 
       # Add a paragraph with styled text
-      p1 = document.add_paragraph('Paragraph 1')
+      document.add_paragraph('Paragraph 1')
 
       # Add a paragraph with mixed styling
       p2 = document.add_paragraph
