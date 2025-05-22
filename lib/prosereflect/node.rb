@@ -25,7 +25,7 @@ module Prosereflect
         super(type: data, attrs: attrs, content: [])
       elsif data.is_a?(Hash)
         # Handle marks in a special way to preserve expected behavior in tests
-        if data['marks'] && data['marks'].is_a?(Array)
+        if data['marks'].is_a?(Array)
           marks_data = data['marks']
           data = data.dup
           data.delete('marks')
@@ -47,27 +47,27 @@ module Prosereflect
 
     # Convert to hash for serialization
     def to_h
-      result = { "type" => type }
+      result = { 'type' => type }
 
       if attrs && !attrs.empty?
         if attrs.is_a?(Hash)
-          result["attrs"] = attrs
+          result['attrs'] = attrs
         elsif attrs.is_a?(Array) && attrs.all? { |attr| attr.respond_to?(:to_h) }
           # Convert array of attribute objects to a hash
           attrs_array = []
           attrs.each do |attr|
-            if attr.is_a?(Prosereflect::Attribute::Base)
-              attrs_array << attr.to_h
-            else
-              attrs_array << attr
-            end
+            attrs_array << if attr.is_a?(Prosereflect::Attribute::Base)
+                             attr.to_h
+                           else
+                             attr
+                           end
           end
-          result["attrs"] = attrs_array unless attrs_array.empty?
+          result['attrs'] = attrs_array unless attrs_array.empty?
         end
       end
 
       if marks && !marks.empty?
-        result["marks"] = marks.map do |mark|
+        result['marks'] = marks.map do |mark|
           if mark.is_a?(Hash)
             mark
           else
@@ -76,14 +76,12 @@ module Prosereflect
         end
       end
 
-      if content && !content.empty?
-        result["content"] = content.map(&:to_h)
-      end
+      result['content'] = content.map(&:to_h) if content && !content.empty?
 
       result
     end
 
-    alias_method :to_hash, :to_h
+    alias to_hash to_h
 
     def marks=(value)
       if value.is_a?(Array)
@@ -128,11 +126,9 @@ module Prosereflect
       results = []
       results << self if type == node_type
 
-      if content
-        content.each do |child|
-          child_results = child.find_all(node_type)
-          results.concat(child_results) if child_results
-        end
+      content&.each do |child|
+        child_results = child.find_all(node_type)
+        results.concat(child_results) if child_results
       end
 
       results

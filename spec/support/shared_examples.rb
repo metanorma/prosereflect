@@ -218,27 +218,27 @@ RSpec.shared_examples 'html conversion' do
   it 'converts to HTML and back' do
     # Create a document with various elements
     document = Prosereflect::Document.create
-    
+
     # Add paragraph with formatted text
     para = document.add_paragraph('Plain text')
     para.add_text(' bold text', [Prosereflect::Mark::Bold.new])
     para.add_hard_break
     para.add_text('After line break', [Prosereflect::Mark::Italic.new])
-    
+
     # Add a table
     table = document.add_table
     table.add_header(['Header 1', 'Header 2'])
     table.add_row(['Cell 1', 'Cell 2'])
-    
+
     # Convert to HTML
     html = Prosereflect::Output::Html.convert(document)
     expect(html).to be_a(String)
     expect(html).not_to be_empty
-    
+
     # Convert back to document model
     parsed_doc = Prosereflect::Input::Html.parse(html)
     expect(parsed_doc).to be_a(Prosereflect::Document)
-    
+
     # Check content was preserved
     expect(parsed_doc.content.size).to be > 0
     expect(parsed_doc.text_content).to include('Plain text')

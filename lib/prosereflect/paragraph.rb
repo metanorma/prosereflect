@@ -28,6 +28,7 @@ module Prosereflect
 
     def text_nodes
       return [] unless content
+
       content.select { |node| node.is_a?(Text) }
     end
 
@@ -36,11 +37,7 @@ module Prosereflect
 
       result = ''
       content.each do |node|
-        result += if node.type == 'text'
-                    node.text_content
-                  else
-                    node.text_content
-                  end
+        result += node.text_content
       end
       result
     end

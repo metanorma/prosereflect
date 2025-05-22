@@ -30,7 +30,7 @@ module Prosereflect
         attrs.each do |attr|
           attrs_hash.merge!(attr.to_h)
         end
-        result["attrs"] = attrs_hash unless attrs_hash.empty?
+        result['attrs'] = attrs_hash unless attrs_hash.empty?
       end
 
       result

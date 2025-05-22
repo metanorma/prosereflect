@@ -54,26 +54,25 @@ module Prosereflect
 
       if type == 'text'
         node = Text.new(text: text)
-        node.marks = marks_data if marks_data && !marks_data.empty?
       else
         node = node_class.create(attrs)
 
         # Process content recursively
-        if data['content'] && data['content'].is_a?(Array)
+        if data['content'].is_a?(Array)
           data['content'].each do |content_data|
             child_node = parse_node(content_data)
             node.add_child(child_node) if child_node
           end
         end
 
-        node.marks = marks_data if marks_data && !marks_data.empty?
       end
+      node.marks = marks_data if marks_data && !marks_data.empty?
 
       node
     end
 
     def self.parse_document(data)
-      raise ArgumentError, "Input cannot be nil" if data.nil?
+      raise ArgumentError, 'Input cannot be nil' if data.nil?
       raise ArgumentError, "Input must be a hash, got #{data.class}" unless data.is_a?(Hash)
 
       document = parse_node(data)

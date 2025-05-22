@@ -35,15 +35,15 @@ module Prosereflect
 
         # Process children of a node and add to parent
         def process_node_children(html_node, parent_node)
-          return unless html_node && html_node.children
+          return unless html_node&.children
 
           html_node.children.each do |child|
             node = convert_node(child)
 
             if node.is_a?(Array)
               node.each { |n| parent_node.add_child(n) }
-            else
-              parent_node.add_child(node) if node
+            elsif node
+              parent_node.add_child(node)
             end
           end
         end
@@ -94,10 +94,8 @@ module Prosereflect
           table = Table.new
 
           thead = html_node.at_css('thead')
-          if thead
-            thead.css('tr').each do |tr|
-              process_table_row(tr, table, true)
-            end
+          thead&.css('tr')&.each do |tr|
+            process_table_row(tr, table, true)
           end
 
           tbody = html_node.at_css('tbody') || html_node
@@ -118,7 +116,7 @@ module Prosereflect
         end
 
         # Add a row to a table
-        def process_table_row(tr_node, table, is_header)
+        def process_table_row(tr_node, table, _is_header)
           row = create_table_row_node(tr_node)
           table.add_child(row)
         end
@@ -143,9 +141,7 @@ module Prosereflect
           if html_node.name == 'div'
             paragraphs = html_node.css('> p')
 
-            if paragraphs.any?
-              return paragraphs.map { |p| create_paragraph_node(p) }
-            end
+            return paragraphs.map { |p| create_paragraph_node(p) } if paragraphs.any?
           end
 
           if contains_only_text_or_inline(html_node)
