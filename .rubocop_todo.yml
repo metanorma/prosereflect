@@ -78,6 +78,10 @@ Metrics/AbcSize:
 Metrics/BlockLength:
   Max: 201
 
+# Offense count: 3
+Metrics/ClassLength:
+  Max: 143
+
 # Offense count: 4
 # Configuration parameters: AllowedMethods, AllowedPatterns.
 Metrics/CyclomaticComplexity:
@@ -129,6 +133,16 @@ Style/Documentation:
     - 'lib/prosereflect/table_cell.rb'
     - 'lib/prosereflect/table_row.rb'
     - 'lib/prosereflect/text.rb'
+    - 'lib/prosereflect/heading.rb'
+    - 'lib/prosereflect/attribute.rb'
+    - 'lib/prosereflect/attribute/base.rb'
+    - 'lib/prosereflect/attribute/bold.rb'
+    - 'lib/prosereflect/attribute/href.rb'
+    - 'lib/prosereflect/attribute/id.rb'
+    - 'lib/prosereflect/input/html.rb'
+    - 'lib/prosereflect/output/html.rb'
+    - 'lib/prosereflect/mark.rb'
+    - 'lib/prosereflect/mark/base.rb'
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
