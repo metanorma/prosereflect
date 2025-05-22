@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative 'base'
 
 module Prosereflect
@@ -15,7 +17,7 @@ module Prosereflect
 
       # Convert to hash for serialization
       def to_h
-        { "id" => id }
+        { 'id' => id }
       end
     end
   end

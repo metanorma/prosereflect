@@ -26,6 +26,7 @@ module Prosereflect
 
     def text_content
       return '' unless content
+
       content.map(&:text_content).join
     end
   end
