@@ -2,6 +2,7 @@
 
 require_relative 'node'
 require_relative 'table_row'
+require_relative 'table_header'
 
 module Prosereflect
   # TODO: support for table attributes
@@ -55,7 +56,9 @@ module Prosereflect
     def add_header(header_cells)
       row = TableRow.create
       header_cells.each do |cell_content|
-        row.add_cell(cell_content)
+        header = TableHeader.new
+        header.add_paragraph(cell_content)
+        row.add_child(header)
       end
       add_child(row)
       row

@@ -79,6 +79,26 @@ RSpec.describe Prosereflect::Parser do
       cell_data = { 'type' => 'table_cell', 'content' => [] }
       expect(described_class.parse_node(cell_data)).to be_a(Prosereflect::TableCell)
 
+      # Test ordered list node
+      ordered_list_data = { 'type' => 'ordered_list', 'content' => [] }
+      expect(described_class.parse_node(ordered_list_data)).to be_a(Prosereflect::OrderedList)
+
+      # Test bullet list node
+      bullet_list_data = { 'type' => 'bullet_list', 'content' => [] }
+      expect(described_class.parse_node(bullet_list_data)).to be_a(Prosereflect::BulletList)
+
+      # Test list item node
+      list_item_data = { 'type' => 'list_item', 'content' => [] }
+      expect(described_class.parse_node(list_item_data)).to be_a(Prosereflect::ListItem)
+
+      # Test blockquote node
+      blockquote_data = { 'type' => 'blockquote', 'content' => [] }
+      expect(described_class.parse_node(blockquote_data)).to be_a(Prosereflect::Blockquote)
+
+      # Test horizontal rule node
+      hr_data = { 'type' => 'horizontal_rule' }
+      expect(described_class.parse_node(hr_data)).to be_a(Prosereflect::HorizontalRule)
+
       # Test generic node
       generic_data = { 'type' => 'unknown_type' }
       expect(described_class.parse_node(generic_data)).to be_a(Prosereflect::Node)
@@ -124,6 +144,134 @@ RSpec.describe Prosereflect::Parser do
       node = described_class.parse_node(data)
       expect(node).to be_a(Prosereflect::TableCell)
       expect(node.attrs).to eq({ 'colspan' => 2, 'rowspan' => 1 })
+    end
+
+    it 'handles ordered lists with start attribute' do
+      data = {
+        'type' => 'ordered_list',
+        'attrs' => { 'start' => 3 },
+        'content' => [
+          {
+            'type' => 'list_item',
+            'content' => [
+              {
+                'type' => 'paragraph',
+                'content' => [{ 'type' => 'text', 'text' => 'Third item' }]
+              }
+            ]
+          }
+        ]
+      }
+
+      node = described_class.parse_node(data)
+      expect(node).to be_a(Prosereflect::OrderedList)
+      expect(node.start).to eq(3)
+      expect(node.items.first).to be_a(Prosereflect::ListItem)
+      expect(node.items.first.text_content).to eq('Third item')
+    end
+
+    it 'handles bullet lists with style attribute' do
+      data = {
+        'type' => 'bullet_list',
+        'attrs' => { 'bullet_style' => 'square' },
+        'content' => [
+          {
+            'type' => 'list_item',
+            'content' => [
+              {
+                'type' => 'paragraph',
+                'content' => [{ 'type' => 'text', 'text' => 'Square bullet' }]
+              }
+            ]
+          }
+        ]
+      }
+
+      node = described_class.parse_node(data)
+      expect(node).to be_a(Prosereflect::BulletList)
+      expect(node.bullet_style).to eq('square')
+      expect(node.items.first).to be_a(Prosereflect::ListItem)
+      expect(node.items.first.text_content).to eq('Square bullet')
+    end
+
+    it 'handles blockquotes with citation' do
+      data = {
+        'type' => 'blockquote',
+        'attrs' => { 'cite' => 'Author Name' },
+        'content' => [
+          {
+            'type' => 'paragraph',
+            'content' => [{ 'type' => 'text', 'text' => 'Quote text' }]
+          }
+        ]
+      }
+
+      node = described_class.parse_node(data)
+      expect(node).to be_a(Prosereflect::Blockquote)
+      expect(node.citation).to eq('Author Name')
+      expect(node.blocks.first).to be_a(Prosereflect::Paragraph)
+      expect(node.blocks.first.text_content).to eq('Quote text')
+    end
+
+    it 'handles horizontal rules with style attributes' do
+      data = {
+        'type' => 'horizontal_rule',
+        'attrs' => {
+          'border_style' => 'dashed',
+          'width' => '80%',
+          'thickness' => 2
+        }
+      }
+
+      node = described_class.parse_node(data)
+      expect(node).to be_a(Prosereflect::HorizontalRule)
+      expect(node.style).to eq('dashed')
+      expect(node.width).to eq('80%')
+      expect(node.thickness).to eq(2)
+    end
+
+    it 'handles nested lists' do
+      data = {
+        'type' => 'bullet_list',
+        'content' => [
+          {
+            'type' => 'list_item',
+            'content' => [
+              {
+                'type' => 'paragraph',
+                'content' => [{ 'type' => 'text', 'text' => 'First level' }]
+              },
+              {
+                'type' => 'ordered_list',
+                'attrs' => { 'start' => 1 },
+                'content' => [
+                  {
+                    'type' => 'list_item',
+                    'content' => [
+                      {
+                        'type' => 'paragraph',
+                        'content' => [{ 'type' => 'text', 'text' => 'Nested item' }]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      node = described_class.parse_node(data)
+      expect(node).to be_a(Prosereflect::BulletList)
+
+      first_item = node.items.first
+      expect(first_item.content.size).to eq(2) # paragraph and nested list
+      expect(first_item.content.first).to be_a(Prosereflect::Paragraph)
+      expect(first_item.content.last).to be_a(Prosereflect::OrderedList)
+
+      nested_list = first_item.content.last
+      expect(nested_list.start).to eq(1)
+      expect(nested_list.items.first.text_content).to eq('Nested item')
     end
   end
 end

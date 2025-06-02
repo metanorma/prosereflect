@@ -7,12 +7,26 @@ require_relative '../text'
 require_relative '../table'
 require_relative '../table_row'
 require_relative '../table_cell'
+require_relative '../table_header'
 require_relative '../hard_break'
 require_relative '../mark/bold'
 require_relative '../mark/italic'
 require_relative '../mark/code'
 require_relative '../mark/link'
+require_relative '../mark/strike'
+require_relative '../mark/subscript'
+require_relative '../mark/superscript'
+require_relative '../mark/underline'
 require_relative '../attribute/href'
+require_relative '../ordered_list'
+require_relative '../bullet_list'
+require_relative '../list_item'
+require_relative '../blockquote'
+require_relative '../horizontal_rule'
+require_relative '../image'
+require_relative '../code_block_wrapper'
+require_relative '../code_block'
+require_relative '../heading'
 
 module Prosereflect
   module Input
@@ -21,7 +35,7 @@ module Prosereflect
         # Parse HTML content and return a Prosereflect::Document
         def parse(html)
           html_doc = Nokogiri::HTML(html)
-          document = Document.new
+          document = Document.create # Use create instead of new to initialize content array
 
           content_node = html_doc.at_css('body') || html_doc.root
 
@@ -57,6 +71,8 @@ module Prosereflect
             create_text_node(html_node)
           when 'p'
             create_paragraph_node(html_node)
+          when /^h([1-6])$/
+            create_heading_node(html_node, Regexp.last_match(1).to_i)
           when 'br'
             HardBreak.new
           when 'table'
@@ -65,10 +81,24 @@ module Prosereflect
             create_table_row_node(html_node)
           when 'th', 'td'
             create_table_cell_node(html_node)
+          when 'ol'
+            create_ordered_list_node(html_node)
+          when 'ul'
+            create_bullet_list_node(html_node)
+          when 'li'
+            create_list_item_node(html_node)
+          when 'blockquote'
+            create_blockquote_node(html_node)
+          when 'hr'
+            create_horizontal_rule_node(html_node)
+          when 'img'
+            create_image_node(html_node)
           when 'div', 'span'
             # For containers, we process their children
             handle_container_node(html_node)
-          when 'strong', 'b', 'em', 'i', 'code', 'a'
+          when 'pre'
+            create_code_block_wrapper(html_node)
+          when 'strong', 'b', 'em', 'i', 'code', 'a', 'strike', 's', 'del', 'sub', 'sup', 'u'
             # For inline elements with text styling, we handle differently
             handle_styled_text(html_node)
           else
@@ -123,7 +153,19 @@ module Prosereflect
 
         # Create a table cell node from HTML cell
         def create_table_cell_node(html_node)
-          cell = TableCell.new
+          # Create either a TableHeader or TableCell based on the tag name
+          cell = if html_node.name == 'th'
+                   header = TableHeader.create
+
+                   # Handle header-specific attributes
+                   header.scope = html_node['scope'] if html_node['scope']
+                   header.abbr = html_node['abbr'] if html_node['abbr']
+                   header.colspan = html_node['colspan'] if html_node['colspan']
+
+                   header
+                 else
+                   TableCell.create
+                 end
 
           if contains_only_text_or_inline(html_node)
             paragraph = Paragraph.new
@@ -138,10 +180,20 @@ module Prosereflect
 
         # Handle a container-like node (div, span, etc.)
         def handle_container_node(html_node)
+          # For top-level divs, process children directly
           if html_node.name == 'div'
-            paragraphs = html_node.css('> p')
+            results = []
+            html_node.children.each do |child|
+              next if child.text? && child.text.strip.empty?
 
-            return paragraphs.map { |p| create_paragraph_node(p) } if paragraphs.any?
+              node = convert_node(child)
+              if node.is_a?(Array)
+                results.concat(node)
+              elsif node
+                results << node
+              end
+            end
+            return results if results.any?
           end
 
           if contains_only_text_or_inline(html_node)
@@ -162,54 +214,303 @@ module Prosereflect
             end
           end
 
-          # If we have only one child, return it
-          return children.first if children.size == 1
-
-          # If we have multiple children, return the array
-          return children if children.size > 1
-
-          nil
+          children
         end
 
         # Handle styled text (bold, italic, etc.)
         def handle_styled_text(html_node)
-          text = Text.new(text: html_node.text)
+          # If the node has children that are not just text, process them
+          if html_node.children.any? { |child| !child.text? }
+            marks = []
 
-          case html_node.name
-          when 'strong', 'b'
-            mark = Mark::Bold.new
-            mark.type = 'bold'
-            text.marks = [mark]
-          when 'em', 'i'
-            mark = Mark::Italic.new
-            mark.type = 'italic'
-            text.marks = [mark]
-          when 'code'
-            mark = Mark::Code.new
-            mark.type = 'code'
-            text.marks = [mark]
-          when 'a'
-            mark = Mark::Link.new
-            mark.type = 'link'
+            # Create mark based on the current node
+            mark = case html_node.name
+                   when 'strong', 'b'
+                     mark = Mark::Bold.new
+                     mark.type = 'bold'
+                     mark
+                   when 'em', 'i'
+                     mark = Mark::Italic.new
+                     mark.type = 'italic'
+                     mark
+                   when 'code'
+                     mark = Mark::Code.new
+                     mark.type = 'code'
+                     mark
+                   when 'a'
+                     mark = Mark::Link.new
+                     mark.type = 'link'
+                     mark.attrs = { 'href' => html_node['href'] } if html_node['href']
+                     mark
+                   when 'strike', 's', 'del'
+                     mark = Mark::Strike.new
+                     mark.type = 'strike'
+                     mark
+                   when 'sub'
+                     mark = Mark::Subscript.new
+                     mark.type = 'subscript'
+                     mark
+                   when 'sup'
+                     mark = Mark::Superscript.new
+                     mark.type = 'superscript'
+                     mark
+                   when 'u'
+                     mark = Mark::Underline.new
+                     mark.type = 'underline'
+                     mark
+                   end
+            marks << mark if mark
 
-            if html_node['href']
-              url = html_node['href']
-              mark.attrs = { href: url }
+            # Process children and apply marks
+            results = []
+            html_node.children.each do |child|
+              node = convert_node(child)
+              next unless node
+
+              if node.is_a?(Text)
+                node.marks ||= []
+                node.marks.concat(marks)
+              end
+              results << node
             end
-
-            text.marks = [mark]
+            results
+          else
+            # Simple text node with a single mark
+            text = Text.new(text: html_node.text)
+            mark = case html_node.name
+                   when 'strong', 'b'
+                     mark = Mark::Bold.new
+                     mark.type = 'bold'
+                     mark
+                   when 'em', 'i'
+                     mark = Mark::Italic.new
+                     mark.type = 'italic'
+                     mark
+                   when 'code'
+                     mark = Mark::Code.new
+                     mark.type = 'code'
+                     mark
+                   when 'a'
+                     mark = Mark::Link.new
+                     mark.type = 'link'
+                     mark.attrs = { 'href' => html_node['href'] } if html_node['href']
+                     mark
+                   when 'strike', 's', 'del'
+                     mark = Mark::Strike.new
+                     mark.type = 'strike'
+                     mark
+                   when 'sub'
+                     mark = Mark::Subscript.new
+                     mark.type = 'subscript'
+                     mark
+                   when 'sup'
+                     mark = Mark::Superscript.new
+                     mark.type = 'superscript'
+                     mark
+                   when 'u'
+                     mark = Mark::Underline.new
+                     mark.type = 'underline'
+                     mark
+                   end
+            text.marks = [mark] if mark
+            text
           end
-
-          text
         end
 
         # Check if a node contains only text or inline elements
         def contains_only_text_or_inline(node)
           node.children.all? do |child|
             child.text? ||
-              %w[strong b em i code a br span].include?(child.name) ||
+              %w[strong b em i code a br span strike s del sub sup u].include?(child.name) ||
               (child.element? && contains_only_text_or_inline(child))
           end
+        end
+
+        # Create an ordered list node from HTML ol
+        def create_ordered_list_node(html_node)
+          list = OrderedList.new
+
+          # Handle start attribute
+          start_val = (html_node['start'] || '1').to_i
+          list.start = start_val
+
+          # Process list items
+          html_node.css('> li').each do |li|
+            list.add_child(create_list_item_node(li))
+          end
+
+          list
+        end
+
+        # Create a bullet list node from HTML ul
+        def create_bullet_list_node(html_node)
+          list = BulletList.new
+
+          # Handle style attribute if present
+          if html_node['style']&.include?('list-style-type')
+            style = case html_node['style']
+                    when /disc/ then 'disc'
+                    when /circle/ then 'circle'
+                    when /square/ then 'square'
+                    else 'disc'
+                    end
+            list.bullet_style = style
+          end
+
+          # Process list items
+          html_node.css('> li').each do |li|
+            list.add_child(create_list_item_node(li))
+          end
+
+          list
+        end
+
+        # Create a list item node from HTML li
+        def create_list_item_node(html_node)
+          item = ListItem.new
+
+          # Handle text content first
+          text_content = html_node.children.select { |child| child.text? || inline_element?(child) }
+          if text_content.any?
+            paragraph = Paragraph.new
+            text_content.each do |child|
+              node = convert_node(child)
+              paragraph.add_child(node) if node
+            end
+            item.add_content(paragraph)
+          end
+
+          # Handle nested content
+          html_node.children.reject { |child| child.text? || inline_element?(child) }.each do |child|
+            node = convert_node(child)
+            if node.is_a?(Array)
+              node.each { |n| item.add_content(n) }
+            elsif node
+              item.add_content(node)
+            end
+          end
+
+          item
+        end
+
+        # Check if a node is an inline element
+        def inline_element?(node)
+          return false unless node.element?
+
+          %w[strong b em i code a br span strike s del sub sup u].include?(node.name)
+        end
+
+        # Create a blockquote node from HTML blockquote
+        def create_blockquote_node(html_node)
+          quote = Blockquote.new
+
+          # Handle cite attribute if present
+          quote.citation = html_node['cite'] if html_node['cite']
+
+          # Process each child separately to maintain block structure
+          html_node.children.each do |child|
+            next if child.text? && child.text.strip.empty?
+
+            if child.text? || inline_element?(child)
+              # Wrap loose text in paragraphs
+              para = Paragraph.new
+              para.add_child(convert_node(child))
+              quote.add_block(para)
+            else
+              node = convert_node(child)
+              if node.is_a?(Array)
+                node.each { |n| quote.add_block(n) }
+              elsif node
+                quote.add_block(node)
+              end
+            end
+          end
+
+          quote
+        end
+
+        # Create a horizontal rule node from HTML hr
+        def create_horizontal_rule_node(html_node)
+          hr = HorizontalRule.new
+
+          # Handle style attributes if present
+          if html_node['style']
+            style = html_node['style']
+
+            # Parse border-style
+            hr.style = Regexp.last_match(1) if style =~ /border-style:\s*(solid|dashed|dotted)/
+
+            # Parse width
+            hr.width = Regexp.last_match(1) if style =~ /width:\s*(\d+(?:px|%)?)/
+
+            # Parse thickness (border-width)
+            hr.thickness = Regexp.last_match(1).to_i if style =~ /border-width:\s*(\d+)px/
+          end
+
+          hr
+        end
+
+        # Create an image node from HTML img
+        def create_image_node(html_node)
+          # Skip images without src
+          return nil unless html_node['src']
+
+          image = Image.new
+
+          # Handle required src attribute
+          image.src = html_node['src']
+
+          # Handle optional attributes
+          image.alt = html_node['alt'] if html_node['alt']
+          image.title = html_node['title'] if html_node['title']
+
+          # Handle dimensions
+          width = html_node['width']&.to_i
+          height = html_node['height']&.to_i
+          image.dimensions = [width, height] if width || height
+
+          image
+        end
+
+        # Create a code block wrapper from HTML pre tag
+        def create_code_block_wrapper(html_node)
+          wrapper = CodeBlockWrapper.new
+
+          # Extract line numbers and highlight lines from data attributes
+          wrapper.line_numbers = html_node['data-line-numbers'] == 'true'
+          wrapper.highlight_lines = html_node['data-highlight-lines']&.split(',')&.map(&:to_i) || []
+
+          # Handle code blocks
+          html_node.css('code').each do |code_node|
+            block = create_code_block(code_node)
+            block = wrapper.add_code_block(block.content)
+            block.language = extract_language(code_node)
+          end
+
+          wrapper
+        end
+
+        # Create a code block from HTML code tag
+        def create_code_block(html_node)
+          block = CodeBlock.new
+          block.content = html_node.text.strip
+          block
+        end
+
+        def extract_language(html_node)
+          return nil unless html_node['class']
+
+          return unless html_node['class'].match?(/language-(\w+)/)
+
+          html_node['class'].match(/language-(\w+)/)[1]
+        end
+
+        # Create a heading node from HTML heading tag (h1-h6)
+        def create_heading_node(html_node, level)
+          heading = Heading.new
+          heading.level = level
+          process_node_children(html_node, heading)
+          heading
         end
       end
     end

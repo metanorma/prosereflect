@@ -31,6 +31,8 @@ module Prosereflect
             process_document(node, builder)
           when 'paragraph'
             process_paragraph(node, builder)
+          when 'heading'
+            process_heading(node, builder)
           when 'text'
             process_text(node, builder)
           when 'table'
@@ -39,8 +41,26 @@ module Prosereflect
             process_table_row(node, builder)
           when 'table_cell'
             process_table_cell(node, builder)
+          when 'table_header'
+            process_table_header(node, builder)
           when 'hard_break'
             builder.br
+          when 'image'
+            process_image(node, builder)
+          when 'bullet_list'
+            process_bullet_list(node, builder)
+          when 'ordered_list'
+            process_ordered_list(node, builder)
+          when 'list_item'
+            process_list_item(node, builder)
+          when 'blockquote'
+            process_blockquote(node, builder)
+          when 'horizontal_rule'
+            process_horizontal_rule(node, builder)
+          when 'code_block_wrapper'
+            process_code_block_wrapper(node, builder)
+          when 'code_block'
+            process_code_block(node, builder)
           else
             # Default handling for unknown nodes - treat as a container
             process_children(node, builder)
@@ -55,6 +75,14 @@ module Prosereflect
         # Process a paragraph node
         def process_paragraph(node, builder)
           builder.p do
+            process_children(node, builder)
+          end
+        end
+
+        # Process a heading node
+        def process_heading(node, builder)
+          level = node.level || 1
+          builder.send("h#{level}") do
             process_children(node, builder)
           end
         end
@@ -107,6 +135,22 @@ module Prosereflect
             else
               apply_marks(text, remaining_marks, builder)
             end
+          when 'strike'
+            builder.del do
+              apply_marks(text, remaining_marks, builder)
+            end
+          when 'underline'
+            builder.u do
+              apply_marks(text, remaining_marks, builder)
+            end
+          when 'subscript'
+            builder.sub do
+              apply_marks(text, remaining_marks, builder)
+            end
+          when 'superscript'
+            builder.sup do
+              apply_marks(text, remaining_marks, builder)
+            end
           else
             # Unknown mark, just process inner content
             apply_marks(text, remaining_marks, builder)
@@ -144,6 +188,15 @@ module Prosereflect
             rows = node.rows || node.content
             return if rows.empty?
 
+            has_header = rows.first&.content&.any? { |cell| cell.type == 'table_header' }
+
+            if has_header
+              builder.thead do
+                process_node(rows.first, builder)
+              end
+              rows = rows[1..]
+            end
+
             builder.tbody do
               rows.each do |row|
                 process_node(row, builder)
@@ -169,6 +222,111 @@ module Prosereflect
             else
               process_children(node, builder)
             end
+          end
+        end
+
+        # Process a table header cell
+        def process_table_header(node, builder)
+          attrs = {}
+          attrs[:scope] = node.scope if node.scope
+          attrs[:abbr] = node.abbr if node.abbr
+          attrs[:colspan] = node.colspan if node.colspan
+
+          builder.th(attrs) do
+            if node.content&.size == 1 && node.content.first.type == 'paragraph'
+              node.content.first.content&.each do |child|
+                process_node(child, builder)
+              end
+            else
+              process_children(node, builder)
+            end
+          end
+        end
+
+        # Process an image node
+        def process_image(node, builder)
+          attrs = {
+            src: node.src,
+            alt: node.alt
+          }
+          attrs[:title] = node.title if node.title
+          attrs[:width] = node.width if node.width
+          attrs[:height] = node.height if node.height
+
+          builder.img(attrs)
+        end
+
+        # Process a bullet list node
+        def process_bullet_list(node, builder)
+          attrs = {}
+          attrs[:style] = "list-style-type: #{node.bullet_style}" if node.bullet_style
+
+          builder.ul(attrs) do
+            process_children(node, builder)
+          end
+        end
+
+        # Process an ordered list node
+        def process_ordered_list(node, builder)
+          attrs = {}
+          attrs[:start] = node.start if node.start && node.start != 1
+
+          builder.ol(attrs) do
+            process_children(node, builder)
+          end
+        end
+
+        # Process a list item node
+        def process_list_item(node, builder)
+          builder.li do
+            process_children(node, builder)
+          end
+        end
+
+        # Process a blockquote node
+        def process_blockquote(node, builder)
+          attrs = {}
+          attrs[:cite] = node.citation if node.citation
+
+          builder.blockquote(attrs) do
+            node.blocks&.each do |block|
+              process_node(block, builder)
+            end
+          end
+        end
+
+        # Process a horizontal rule node
+        def process_horizontal_rule(node, builder)
+          attrs = {}
+          attrs[:style] = []
+          attrs[:style] << "border-style: #{node.style}" if node.style
+          attrs[:style] << "width: #{node.width}" if node.width
+          attrs[:style] << "border-width: #{node.thickness}px" if node.thickness
+          attrs[:style] = attrs[:style].join('; ') unless attrs[:style].empty?
+
+          builder.hr(attrs)
+        end
+
+        # Process a code block wrapper node
+        def process_code_block_wrapper(node, builder)
+          attrs = {}
+          attrs['data-line-numbers'] = 'true' if node.line_numbers
+          attrs['data-highlight-lines'] = node.highlight_lines.join(',') if node.highlight_lines&.any?
+
+          builder.pre(attrs) do
+            node.code_blocks&.each do |code_block|
+              process_node(code_block, builder)
+            end
+          end
+        end
+
+        # Process a code block node
+        def process_code_block(node, builder)
+          attrs = {}
+          attrs[:class] = "language-#{node.language}" if node.language
+
+          builder.code(attrs) do
+            builder.text node.content
           end
         end
 

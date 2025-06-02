@@ -3,6 +3,12 @@
 require_relative 'node'
 require_relative 'table'
 require_relative 'paragraph'
+require_relative 'image'
+require_relative 'bullet_list'
+require_relative 'ordered_list'
+require_relative 'blockquote'
+require_relative 'horizontal_rule'
+require_relative 'code_block_wrapper'
 
 module Prosereflect
   # Document class represents a ProseMirror document.
@@ -59,6 +65,50 @@ module Prosereflect
       table = Table.new(attrs: attrs)
       add_child(table)
       table
+    end
+
+    # Add an image to the document
+    def add_image(src, alt = nil, _attrs = {})
+      image = Image.new
+      image.src = src
+      image.alt = alt if alt
+      add_child(image)
+      image
+    end
+
+    # Add a bullet list to the document
+    def add_bullet_list(attrs = nil)
+      list = BulletList.new(attrs: attrs)
+      add_child(list)
+      list
+    end
+
+    # Add an ordered list to the document
+    def add_ordered_list(attrs = nil)
+      list = OrderedList.new(attrs: attrs)
+      add_child(list)
+      list
+    end
+
+    # Add a blockquote to the document
+    def add_blockquote(attrs = nil)
+      quote = Blockquote.new(attrs: attrs)
+      add_child(quote)
+      quote
+    end
+
+    # Add a horizontal rule to the document
+    def add_horizontal_rule(attrs = nil)
+      hr = HorizontalRule.new(attrs: attrs)
+      add_child(hr)
+      hr
+    end
+
+    # Add a code block wrapper to the document
+    def add_code_block_wrapper(attrs = nil)
+      wrapper = CodeBlockWrapper.new(attrs: attrs)
+      add_child(wrapper)
+      wrapper
     end
   end
 end
