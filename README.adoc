@@ -249,10 +249,93 @@ Represents a text node.
 
 Represents a table structure.
 
-`rows`:: All table rows
-`header_row`:: The first row (assumed to be the header)
-`data_rows`:: All rows except the header
-`cell_at(row_index, col_index)`:: Access a specific cell by position
+`rows`:: Collection of table rows
+`header_row`:: First row if it contains header cells
+`data_rows`:: All non-header rows
+
+=== Heading
+
+Represents a heading element (h1-h6).
+
+`level`:: The heading level (1-6)
+`text_content`:: Returns the combined text content of all child text nodes
+`content`:: Collection of child nodes (text, styled text, etc.)
+
+=== Image
+
+Represents an image element.
+
+`src`:: The image source URL
+`alt`:: Alternative text description
+`title`:: Image tooltip text
+`width`:: Image width in pixels
+`height`:: Image height in pixels
+
+=== HorizontalRule
+
+Represents a horizontal rule (hr) element.
+
+`style`:: Border style (solid, dashed, dotted)
+`width`:: Rule width (px or %)
+`thickness`:: Border thickness in pixels
+
+=== BulletList
+
+Represents an unordered list.
+
+`bullet_style`:: List style type (disc, circle, square)
+`items`:: Collection of list items
+
+=== OrderedList
+
+Represents an ordered list.
+
+`start`:: Starting number for the list
+`items`:: Collection of list items
+
+=== ListItem
+
+Represents a list item within ordered or unordered lists.
+
+`content`:: Collection of child nodes (can contain paragraphs, nested lists, etc.)
+`text_content`:: Returns the combined text content
+
+=== Blockquote
+
+Represents a blockquote element.
+
+`citation`:: Optional citation URL
+`blocks`:: Collection of content blocks within the quote
+
+=== CodeBlockWrapper
+
+Container for code blocks with additional attributes.
+
+`line_numbers`:: Whether to display line numbers
+`highlight_lines`:: Array of line numbers to highlight
+`code_blocks`:: Collection of code blocks
+
+=== CodeBlock
+
+Represents a code block with syntax highlighting.
+
+`content`:: The code content
+`language`:: Programming language for syntax highlighting
+
+=== Mark
+
+Base class for text formatting marks.
+
+==== Available Mark Types
+
+`Bold`:: Bold text formatting
+`Italic`:: Italic text formatting
+`Code`:: Inline code formatting
+`Link`:: Hyperlink with href attribute
+`Strike`:: Strikethrough text
+`Subscript`:: Subscript text
+`Superscript`:: Superscript text
+`Underline`:: Underlined text
 
 === TableRow
 

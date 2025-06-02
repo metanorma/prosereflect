@@ -76,7 +76,13 @@ module Prosereflect
         end
       end
 
-      result['content'] = content.map(&:to_h) if content && !content.empty?
+      if content && !content.empty?
+        result['content'] = if content.is_a?(Array)
+                              content.map { |item| item.respond_to?(:to_h) ? item.to_h : item }
+                            else
+                              [content]
+                            end
+      end
 
       result
     end
