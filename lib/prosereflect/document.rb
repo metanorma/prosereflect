@@ -9,6 +9,7 @@ require_relative 'ordered_list'
 require_relative 'blockquote'
 require_relative 'horizontal_rule'
 require_relative 'code_block_wrapper'
+require_relative 'heading'
 
 module Prosereflect
   # Document class represents a ProseMirror document.
@@ -39,6 +40,15 @@ module Prosereflect
         result['attrs'] = attrs_hash unless attrs_hash.empty?
       end
 
+      # Ensure highlight_lines is an array
+      if result['content']&.any?
+        result['content'].each do |node|
+          if node['attrs']&.key?('highlight_lines') && node['attrs']['highlight_lines'].is_a?(String)
+            node['attrs']['highlight_lines'] = [node['attrs']['highlight_lines'].to_i]
+          end
+        end
+      end
+
       result
     end
 
@@ -48,6 +58,13 @@ module Prosereflect
 
     def paragraphs
       find_children(Paragraph)
+    end
+
+    # Add a heading to the document
+    def add_heading(level)
+      heading = Heading.new(attrs: { 'level' => level })
+      add_child(heading)
+      heading
     end
 
     # Add a paragraph with text to the document
@@ -109,6 +126,13 @@ module Prosereflect
       wrapper = CodeBlockWrapper.new(attrs: attrs)
       add_child(wrapper)
       wrapper
+    end
+
+    # Get plain text content from all nodes
+    def text_content
+      return '' unless content
+
+      content.map { |node| node.respond_to?(:text_content) ? node.text_content : '' }.join("\n").strip
     end
   end
 end

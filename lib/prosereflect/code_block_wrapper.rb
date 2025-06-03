@@ -20,13 +20,9 @@ module Prosereflect
 
     def initialize(attributes = {})
       attributes[:content] ||= []
-
-      # Extract attributes from the attrs hash if provided
-      if attributes[:attrs]
-        @line_numbers = attributes[:attrs]['line_numbers']
-        @highlight_lines = parse_highlight_lines(attributes[:attrs]['highlight_lines'])
-      end
-
+      attributes[:attrs] = {
+        'line_numbers' => false
+      }
       super
     end
 
@@ -42,16 +38,6 @@ module Prosereflect
 
     def line_numbers
       @line_numbers || attrs&.[]('line_numbers') || false
-    end
-
-    def highlight_lines=(lines)
-      @highlight_lines = lines.is_a?(Array) ? lines : parse_highlight_lines(lines)
-      self.attrs ||= {}
-      attrs['highlight_lines'] = @highlight_lines.join(',')
-    end
-
-    def highlight_lines
-      @highlight_lines || parse_highlight_lines(attrs&.[]('highlight_lines')) || []
     end
 
     def add_code_block(code = nil)
@@ -71,19 +57,10 @@ module Prosereflect
 
     def to_h
       hash = super
-      hash['attrs'] ||= {}
-      hash['attrs']['line_numbers'] = @line_numbers if @line_numbers
-      hash['attrs']['highlight_lines'] = @highlight_lines.join(',') if @highlight_lines&.any?
+      hash['attrs'] = {
+        'line_numbers' => line_numbers
+      }
       hash
-    end
-
-    private
-
-    def parse_highlight_lines(lines_str)
-      return [] unless lines_str
-      return lines_str if lines_str.is_a?(Array)
-
-      lines_str.to_s.split(',').map(&:strip).map(&:to_i)
     end
   end
 end

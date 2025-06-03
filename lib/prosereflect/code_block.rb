@@ -19,14 +19,10 @@ module Prosereflect
     end
 
     def initialize(attributes = {})
-      attributes[:content] ||= []
-
-      # Extract attributes from the attrs hash if provided
-      if attributes[:attrs]
-        @language = attributes[:attrs]['language']
-        @line_numbers = attributes[:attrs]['line_numbers']
-      end
-
+      attributes[:attrs] ||= {
+        'content' => nil,
+        'language' => nil
+      }
       super
     end
 
@@ -54,13 +50,14 @@ module Prosereflect
       @line_numbers || attrs&.[]('line_numbers') || false
     end
 
-    def content=(text)
-      @raw_content = text
-      super(text)
+    def content=(value)
+      @content = value
+      self.attrs ||= {}
+      attrs['content'] = value
     end
 
     def content
-      @raw_content || super
+      @content || attrs&.[]('content')
     end
 
     attr_reader :highlight_lines_str
@@ -84,13 +81,14 @@ module Prosereflect
     end
 
     def to_h
-      result = super
-      result['attrs'] ||= {}
-      result['attrs']['language'] = language if language
-      result['attrs']['line_numbers'] = line_numbers if line_numbers
-      result['attrs']['highlight_lines'] = @highlight_lines_str if @highlight_lines_str
-      result['attrs']['content'] = text_content if !text_content.nil? && !text_content.empty?
-      result
+      hash = super
+      hash['attrs'] = {
+        'content' => content,
+        'language' => language
+      }
+      hash['attrs']['line_numbers'] = line_numbers if line_numbers
+      hash.delete('content')
+      hash
     end
 
     # Get code block attributes as a hash

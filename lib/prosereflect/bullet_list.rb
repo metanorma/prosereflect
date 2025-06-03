@@ -20,6 +20,7 @@ module Prosereflect
 
     def initialize(attributes = {})
       attributes[:content] ||= []
+      attributes[:attrs] ||= { 'bullet_style' => nil }
       super
     end
 
@@ -27,10 +28,10 @@ module Prosereflect
       new(attrs: attrs)
     end
 
-    def bullet_style=(style)
-      @bullet_style = style
+    def bullet_style=(value)
+      @bullet_style = value
       self.attrs ||= {}
-      attrs['bullet_style'] = style
+      attrs['bullet_style'] = value
     end
 
     def bullet_style
@@ -62,6 +63,21 @@ module Prosereflect
       return nil if index.negative?
 
       items[index]
+    end
+
+    # Get text content with proper formatting
+    def text_content
+      return '' unless content
+
+      content.map { |item| item.respond_to?(:text_content) ? item.text_content : '' }.join("\n")
+    end
+
+    # Override to_h to exclude empty attrs
+    def to_h
+      hash = super
+      hash['attrs'] ||= {}
+      hash['attrs']['bullet_style'] = bullet_style
+      hash
     end
   end
 end

@@ -219,100 +219,68 @@ module Prosereflect
 
         # Handle styled text (bold, italic, etc.)
         def handle_styled_text(html_node)
+          # Create mark based on the current node
+          mark = case html_node.name
+                 when 'strong', 'b'
+                   mark = Mark::Bold.new
+                   mark.type = 'bold'
+                   mark
+                 when 'em', 'i'
+                   mark = Mark::Italic.new
+                   mark.type = 'italic'
+                   mark
+                 when 'code'
+                   mark = Mark::Code.new
+                   mark.type = 'code'
+                   mark
+                 when 'a'
+                   mark = Mark::Link.new
+                   mark.type = 'link'
+                   mark.attrs = { 'href' => html_node['href'] } if html_node['href']
+                   mark
+                 when 'strike', 's', 'del'
+                   mark = Mark::Strike.new
+                   mark.type = 'strike'
+                   mark
+                 when 'sub'
+                   mark = Mark::Subscript.new
+                   mark.type = 'subscript'
+                   mark
+                 when 'sup'
+                   mark = Mark::Superscript.new
+                   mark.type = 'superscript'
+                   mark
+                 when 'u'
+                   mark = Mark::Underline.new
+                   mark.type = 'underline'
+                   mark
+                 end
+
+          return convert_node(html_node.children.first) unless mark
+
           # If the node has children that are not just text, process them
           if html_node.children.any? { |child| !child.text? }
-            marks = []
-
-            # Create mark based on the current node
-            mark = case html_node.name
-                   when 'strong', 'b'
-                     mark = Mark::Bold.new
-                     mark.type = 'bold'
-                     mark
-                   when 'em', 'i'
-                     mark = Mark::Italic.new
-                     mark.type = 'italic'
-                     mark
-                   when 'code'
-                     mark = Mark::Code.new
-                     mark.type = 'code'
-                     mark
-                   when 'a'
-                     mark = Mark::Link.new
-                     mark.type = 'link'
-                     mark.attrs = { 'href' => html_node['href'] } if html_node['href']
-                     mark
-                   when 'strike', 's', 'del'
-                     mark = Mark::Strike.new
-                     mark.type = 'strike'
-                     mark
-                   when 'sub'
-                     mark = Mark::Subscript.new
-                     mark.type = 'subscript'
-                     mark
-                   when 'sup'
-                     mark = Mark::Superscript.new
-                     mark.type = 'superscript'
-                     mark
-                   when 'u'
-                     mark = Mark::Underline.new
-                     mark.type = 'underline'
-                     mark
-                   end
-            marks << mark if mark
-
-            # Process children and apply marks
+            # Process children and add the current mark to their marks
             results = []
             html_node.children.each do |child|
               node = convert_node(child)
               next unless node
 
-              if node.is_a?(Text)
-                node.marks ||= []
-                node.marks.concat(marks)
+              if node.is_a?(Array)
+                node.each do |n|
+                  n.marks = (n.raw_marks || []) + [mark]
+                  results << n
+                end
+              else
+                node.marks = (node.raw_marks || []) + [mark]
+                results << node
               end
-              results << node
             end
             results
           else
-            # Simple text node with a single mark
+            # Create a text node with the mark
             text = Text.new(text: html_node.text)
-            mark = case html_node.name
-                   when 'strong', 'b'
-                     mark = Mark::Bold.new
-                     mark.type = 'bold'
-                     mark
-                   when 'em', 'i'
-                     mark = Mark::Italic.new
-                     mark.type = 'italic'
-                     mark
-                   when 'code'
-                     mark = Mark::Code.new
-                     mark.type = 'code'
-                     mark
-                   when 'a'
-                     mark = Mark::Link.new
-                     mark.type = 'link'
-                     mark.attrs = { 'href' => html_node['href'] } if html_node['href']
-                     mark
-                   when 'strike', 's', 'del'
-                     mark = Mark::Strike.new
-                     mark.type = 'strike'
-                     mark
-                   when 'sub'
-                     mark = Mark::Subscript.new
-                     mark.type = 'subscript'
-                     mark
-                   when 'sup'
-                     mark = Mark::Superscript.new
-                     mark.type = 'superscript'
-                     mark
-                   when 'u'
-                     mark = Mark::Underline.new
-                     mark.type = 'underline'
-                     mark
-                   end
-            text.marks = [mark] if mark
+            text.marks = [mark]
             text
           end
         end
@@ -345,6 +313,7 @@ module Prosereflect
         # Create a bullet list node from HTML ul
         def create_bullet_list_node(html_node)
           list = BulletList.new
+          list.bullet_style = nil
 
           # Handle style attribute if present
           if html_node['style']&.include?('list-style-type')
@@ -352,16 +321,11 @@ module Prosereflect
                     when /disc/ then 'disc'
                     when /circle/ then 'circle'
                     when /square/ then 'square'
-                    else 'disc'
                     end
             list.bullet_style = style
           end
 
-          # Process list items
-          html_node.css('> li').each do |li|
-            list.add_child(create_list_item_node(li))
-          end
-
+          process_node_children(html_node, list)
           list
         end
 
@@ -475,34 +439,44 @@ module Prosereflect
         # Create a code block wrapper from HTML pre tag
         def create_code_block_wrapper(html_node)
           wrapper = CodeBlockWrapper.new
+          wrapper.attrs = {
+            'line_numbers' => false
+          }
 
-          # Extract line numbers and highlight lines from data attributes
-          wrapper.line_numbers = html_node['data-line-numbers'] == 'true'
-          wrapper.highlight_lines = html_node['data-highlight-lines']&.split(',')&.map(&:to_i) || []
-
-          # Handle code blocks
-          html_node.css('code').each do |code_node|
+          code_node = html_node.at_css('code')
+          if code_node
             block = create_code_block(code_node)
-            block = wrapper.add_code_block(block.content)
-            block.language = extract_language(code_node)
+            wrapper.add_child(block)
           end
 
+          wrapper.to_h['attrs'] = {
+            'line_numbers' => false
+          }
           wrapper
         end
 
         # Create a code block from HTML code tag
         def create_code_block(html_node)
           block = CodeBlock.new
-          block.content = html_node.text.strip
+          content = html_node.text.strip
+          language = extract_language(html_node)
+
+          block.attrs = {
+            'content' => content,
+            'language' => language,
+            'line_numbers' => nil
+          }
+          block.content = content
+
           block
         end
 
         def extract_language(html_node)
           return nil unless html_node['class']
 
-          return unless html_node['class'].match?(/language-(\w+)/)
+          return unless html_node['class'] =~ /language-(\w+)/
 
-          html_node['class'].match(/language-(\w+)/)[1]
+          Regexp.last_match(1)
         end
 
         # Create a heading node from HTML heading tag (h1-h6)

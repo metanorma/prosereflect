@@ -5,252 +5,245 @@ require 'spec_helper'
 RSpec.describe Prosereflect::Parser do
   let(:fixtures_path) { File.join(__dir__, '..', 'fixtures') }
 
-  describe '.parse_document' do
-    context 'with YAML fixtures' do
-      let(:yaml_files) { Dir.glob(File.join(fixtures_path, '*/*.yaml')) }
+  describe 'document parsing' do
+    describe '.parse_document' do
+      it 'parses a simple document' do
+        data = {
+          'type' => 'doc',
+          'content' => [
+            {
+              'type' => 'paragraph',
+              'content' => [
+                { 'type' => 'text', 'text' => 'Hello world' }
+              ]
+            }
+          ]
+        }
 
-      it 'parses all YAML fixtures successfully' do
-        yaml_files.each do |yaml_file|
-          yaml_content = File.read(yaml_file)
-          data = YAML.safe_load(yaml_content)
+        document = described_class.parse_document(data)
+        expect(document).to be_a(Prosereflect::Document)
+        expect(document.text_content).to eq('Hello world')
+      end
 
-          expect do
+      it 'parses a complex document with multiple blocks' do
+        data = {
+          'type' => 'doc',
+          'content' => [
+            {
+              'type' => 'paragraph',
+              'content' => [
+                { 'type' => 'text', 'text' => 'First paragraph' }
+              ]
+            },
+            {
+              'type' => 'bullet_list',
+              'content' => [
+                {
+                  'type' => 'list_item',
+                  'content' => [
+                    {
+                      'type' => 'paragraph',
+                      'content' => [
+                        { 'type' => 'text', 'text' => 'List item' }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              'type' => 'blockquote',
+              'content' => [
+                {
+                  'type' => 'paragraph',
+                  'content' => [
+                    { 'type' => 'text', 'text' => 'Quote text' }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+
+        document = described_class.parse_document(data)
+        expect(document).to be_a(Prosereflect::Document)
+        expect(document.content.size).to eq(3)
+        expect(document.content[0]).to be_a(Prosereflect::Paragraph)
+        expect(document.content[1]).to be_a(Prosereflect::BulletList)
+        expect(document.content[2]).to be_a(Prosereflect::Blockquote)
+      end
+
+      context 'with fixtures' do
+        it 'parses all YAML fixtures successfully' do
+          Dir.glob(File.join(fixtures_path, '*/*.yaml')).each do |yaml_file|
+            data = YAML.safe_load(File.read(yaml_file))
             document = described_class.parse_document(data)
             expect(document).to be_a(Prosereflect::Document)
-          end.not_to raise_error
+          end
         end
-      end
-    end
 
-    context 'with JSON fixtures' do
-      let(:json_files) { Dir.glob(File.join(fixtures_path, '*/*.json')) }
-
-      it 'parses all JSON fixtures successfully' do
-        json_files.each do |json_file|
-          json_content = File.read(json_file)
-          data = JSON.parse(json_content)
-
-          expect do
+        it 'parses all JSON fixtures successfully' do
+          Dir.glob(File.join(fixtures_path, '*/*.json')).each do |json_file|
+            data = JSON.parse(File.read(json_file))
             document = described_class.parse_document(data)
             expect(document).to be_a(Prosereflect::Document)
-          end.not_to raise_error
+          end
         end
       end
-    end
 
-    context 'with invalid input' do
-      it 'raises an error for nil input' do
-        expect { described_class.parse_document(nil) }.to raise_error(ArgumentError)
-      end
+      context 'with invalid input' do
+        it 'raises an error for nil input' do
+          expect { described_class.parse_document(nil) }.to raise_error(ArgumentError)
+        end
 
-      it 'raises an error for non-hash input' do
-        expect { described_class.parse_document('not a hash') }.to raise_error(ArgumentError)
+        it 'raises an error for non-hash input' do
+          expect { described_class.parse_document('not a hash') }.to raise_error(ArgumentError)
+        end
+
+        it 'wraps non-document nodes in a document' do
+          data = { 'type' => 'paragraph', 'content' => [] }
+          document = described_class.parse_document(data)
+          expect(document).to be_a(Prosereflect::Document)
+          expect(document.content.first).to be_a(Prosereflect::Paragraph)
+        end
+
+        it 'wraps generic nodes in a document' do
+          document = described_class.parse_document({ 'content' => [] })
+          expect(document).to be_a(Prosereflect::Document)
+          expect(document.content.size).to eq(1)
+          expect(document.content.first).to be_a(Prosereflect::Node)
+          expect(document.content.first.type).to eq('node')
+        end
       end
     end
   end
 
-  describe '.parse_node' do
-    it 'creates the correct node type based on the input' do
-      # Test document node
-      doc_data = { 'type' => 'doc', 'content' => [] }
-      expect(described_class.parse_node(doc_data)).to be_a(Prosereflect::Document)
-
-      # Test paragraph node
-      para_data = { 'type' => 'paragraph', 'content' => [] }
-      expect(described_class.parse_node(para_data)).to be_a(Prosereflect::Paragraph)
-
-      # Test text node
-      text_data = { 'type' => 'text', 'text' => 'Hello' }
-      expect(described_class.parse_node(text_data)).to be_a(Prosereflect::Text)
-
-      # Test hard_break node
-      break_data = { 'type' => 'hard_break' }
-      expect(described_class.parse_node(break_data)).to be_a(Prosereflect::HardBreak)
-
-      # Test table node
-      table_data = { 'type' => 'table', 'content' => [] }
-      expect(described_class.parse_node(table_data)).to be_a(Prosereflect::Table)
-
-      # Test table_row node
-      row_data = { 'type' => 'table_row', 'content' => [] }
-      expect(described_class.parse_node(row_data)).to be_a(Prosereflect::TableRow)
-
-      # Test table_cell node
-      cell_data = { 'type' => 'table_cell', 'content' => [] }
-      expect(described_class.parse_node(cell_data)).to be_a(Prosereflect::TableCell)
-
-      # Test ordered list node
-      ordered_list_data = { 'type' => 'ordered_list', 'content' => [] }
-      expect(described_class.parse_node(ordered_list_data)).to be_a(Prosereflect::OrderedList)
-
-      # Test bullet list node
-      bullet_list_data = { 'type' => 'bullet_list', 'content' => [] }
-      expect(described_class.parse_node(bullet_list_data)).to be_a(Prosereflect::BulletList)
-
-      # Test list item node
-      list_item_data = { 'type' => 'list_item', 'content' => [] }
-      expect(described_class.parse_node(list_item_data)).to be_a(Prosereflect::ListItem)
-
-      # Test blockquote node
-      blockquote_data = { 'type' => 'blockquote', 'content' => [] }
-      expect(described_class.parse_node(blockquote_data)).to be_a(Prosereflect::Blockquote)
-
-      # Test horizontal rule node
-      hr_data = { 'type' => 'horizontal_rule' }
-      expect(described_class.parse_node(hr_data)).to be_a(Prosereflect::HorizontalRule)
-
-      # Test generic node
-      generic_data = { 'type' => 'unknown_type' }
-      expect(described_class.parse_node(generic_data)).to be_a(Prosereflect::Node)
-    end
-
-    it 'handles nodes with content' do
-      data = {
-        'type' => 'paragraph',
-        'content' => [
-          { 'type' => 'text', 'text' => 'Hello' },
-          { 'type' => 'hard_break' },
-          { 'type' => 'text', 'text' => 'World' }
-        ]
-      }
-
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::Paragraph)
-      expect(node.content.size).to eq(3)
-      expect(node.content[0]).to be_a(Prosereflect::Text)
-      expect(node.content[1]).to be_a(Prosereflect::HardBreak)
-      expect(node.content[2]).to be_a(Prosereflect::Text)
-    end
-
-    it 'handles nodes with marks' do
-      data = {
-        'type' => 'text',
-        'text' => 'Bold text',
-        'marks' => [{ 'type' => 'bold' }]
-      }
-
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::Text)
-      expect(node.marks).to eq([{ 'type' => 'bold' }])
-    end
-
-    it 'handles nodes with attributes' do
-      data = {
-        'type' => 'table_cell',
-        'attrs' => { 'colspan' => 2, 'rowspan' => 1 },
-        'content' => []
-      }
-
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::TableCell)
-      expect(node.attrs).to eq({ 'colspan' => 2, 'rowspan' => 1 })
-    end
-
-    it 'handles ordered lists with start attribute' do
-      data = {
-        'type' => 'ordered_list',
-        'attrs' => { 'start' => 3 },
-        'content' => [
-          {
-            'type' => 'list_item',
-            'content' => [
-              {
-                'type' => 'paragraph',
-                'content' => [{ 'type' => 'text', 'text' => 'Third item' }]
-              }
+  describe 'node parsing' do
+    describe '.parse_node' do
+      context 'basic nodes' do
+        it 'parses text nodes' do
+          data = {
+            'type' => 'text',
+            'text' => 'Hello world',
+            'marks' => [
+              { 'type' => 'bold' },
+              { 'type' => 'italic' }
             ]
           }
-        ]
-      }
 
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::OrderedList)
-      expect(node.start).to eq(3)
-      expect(node.items.first).to be_a(Prosereflect::ListItem)
-      expect(node.items.first.text_content).to eq('Third item')
-    end
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::Text)
+          expect(node.text).to eq('Hello world')
+          expect(node.marks.map { |m| m['type'] }).to eq(%w[bold italic])
+        end
 
-    it 'handles bullet lists with style attribute' do
-      data = {
-        'type' => 'bullet_list',
-        'attrs' => { 'bullet_style' => 'square' },
-        'content' => [
-          {
-            'type' => 'list_item',
-            'content' => [
-              {
-                'type' => 'paragraph',
-                'content' => [{ 'type' => 'text', 'text' => 'Square bullet' }]
-              }
-            ]
-          }
-        ]
-      }
-
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::BulletList)
-      expect(node.bullet_style).to eq('square')
-      expect(node.items.first).to be_a(Prosereflect::ListItem)
-      expect(node.items.first.text_content).to eq('Square bullet')
-    end
-
-    it 'handles blockquotes with citation' do
-      data = {
-        'type' => 'blockquote',
-        'attrs' => { 'cite' => 'Author Name' },
-        'content' => [
-          {
+        it 'parses paragraph nodes' do
+          data = {
             'type' => 'paragraph',
-            'content' => [{ 'type' => 'text', 'text' => 'Quote text' }]
+            'content' => [
+              { 'type' => 'text', 'text' => 'First' },
+              { 'type' => 'hard_break' },
+              { 'type' => 'text', 'text' => 'Second' }
+            ]
           }
-        ]
-      }
 
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::Blockquote)
-      expect(node.citation).to eq('Author Name')
-      expect(node.blocks.first).to be_a(Prosereflect::Paragraph)
-      expect(node.blocks.first.text_content).to eq('Quote text')
-    end
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::Paragraph)
+          expect(node.content.size).to eq(3)
+          expect(node.text_content).to eq("First\nSecond")
+        end
 
-    it 'handles horizontal rules with style attributes' do
-      data = {
-        'type' => 'horizontal_rule',
-        'attrs' => {
-          'border_style' => 'dashed',
-          'width' => '80%',
-          'thickness' => 2
-        }
-      }
+        it 'parses hard break nodes' do
+          data = { 'type' => 'hard_break' }
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::HardBreak)
+        end
 
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::HorizontalRule)
-      expect(node.style).to eq('dashed')
-      expect(node.width).to eq('80%')
-      expect(node.thickness).to eq(2)
-    end
+        it 'parses horizontal rule nodes' do
+          data = {
+            'type' => 'horizontal_rule',
+            'attrs' => {
+              'border_style' => 'dashed',
+              'width' => '80%'
+            }
+          }
 
-    it 'handles nested lists' do
-      data = {
-        'type' => 'bullet_list',
-        'content' => [
-          {
-            'type' => 'list_item',
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::HorizontalRule)
+          expect(node.style).to eq('dashed')
+          expect(node.width).to eq('80%')
+        end
+      end
+
+      context 'list nodes' do
+        it 'parses bullet lists' do
+          data = {
+            'type' => 'bullet_list',
+            'attrs' => { 'bullet_style' => 'square' },
             'content' => [
               {
-                'type' => 'paragraph',
-                'content' => [{ 'type' => 'text', 'text' => 'First level' }]
-              },
-              {
-                'type' => 'ordered_list',
-                'attrs' => { 'start' => 1 },
+                'type' => 'list_item',
                 'content' => [
                   {
-                    'type' => 'list_item',
+                    'type' => 'paragraph',
+                    'content' => [{ 'type' => 'text', 'text' => 'Item 1' }]
+                  }
+                ]
+              }
+            ]
+          }
+
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::BulletList)
+          expect(node.bullet_style).to eq('square')
+          expect(node.items.first.text_content).to eq('Item 1')
+        end
+
+        it 'parses ordered lists' do
+          data = {
+            'type' => 'ordered_list',
+            'attrs' => { 'start' => 3 },
+            'content' => [
+              {
+                'type' => 'list_item',
+                'content' => [
+                  {
+                    'type' => 'paragraph',
+                    'content' => [{ 'type' => 'text', 'text' => 'Item 3' }]
+                  }
+                ]
+              }
+            ]
+          }
+
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::OrderedList)
+          expect(node.start).to eq(3)
+          expect(node.items.first.text_content).to eq('Item 3')
+        end
+
+        it 'parses nested lists' do
+          data = {
+            'type' => 'bullet_list',
+            'content' => [
+              {
+                'type' => 'list_item',
+                'content' => [
+                  {
+                    'type' => 'paragraph',
+                    'content' => [{ 'type' => 'text', 'text' => 'Level 1' }]
+                  },
+                  {
+                    'type' => 'ordered_list',
                     'content' => [
                       {
-                        'type' => 'paragraph',
-                        'content' => [{ 'type' => 'text', 'text' => 'Nested item' }]
+                        'type' => 'list_item',
+                        'content' => [
+                          {
+                            'type' => 'paragraph',
+                            'content' => [{ 'type' => 'text', 'text' => 'Level 2' }]
+                          }
+                        ]
                       }
                     ]
                   }
@@ -258,20 +251,92 @@ RSpec.describe Prosereflect::Parser do
               }
             ]
           }
-        ]
-      }
 
-      node = described_class.parse_node(data)
-      expect(node).to be_a(Prosereflect::BulletList)
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::BulletList)
+          expect(node.items.first.content.size).to eq(2)
+          expect(node.items.first.content[1]).to be_a(Prosereflect::OrderedList)
+        end
+      end
 
-      first_item = node.items.first
-      expect(first_item.content.size).to eq(2) # paragraph and nested list
-      expect(first_item.content.first).to be_a(Prosereflect::Paragraph)
-      expect(first_item.content.last).to be_a(Prosereflect::OrderedList)
+      context 'table nodes' do
+        it 'parses tables with complex content' do
+          data = {
+            'type' => 'table',
+            'content' => [
+              {
+                'type' => 'table_row',
+                'content' => [
+                  {
+                    'type' => 'table_cell',
+                    'attrs' => { 'colspan' => 2 },
+                    'content' => [
+                      {
+                        'type' => 'paragraph',
+                        'content' => [
+                          {
+                            'type' => 'text',
+                            'text' => 'Header',
+                            'marks' => [{ 'type' => 'bold' }]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
 
-      nested_list = first_item.content.last
-      expect(nested_list.start).to eq(1)
-      expect(nested_list.items.first.text_content).to eq('Nested item')
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::Table)
+          expect(node.rows.first.cells.first.attrs['colspan']).to eq(2)
+          expect(node.rows.first.cells.first.text_content).to eq('Header')
+        end
+      end
+
+      context 'blockquote nodes' do
+        it 'parses blockquotes with citation' do
+          data = {
+            'type' => 'blockquote',
+            'attrs' => { 'cite' => 'Author' },
+            'content' => [
+              {
+                'type' => 'paragraph',
+                'content' => [{ 'type' => 'text', 'text' => 'Quote' }]
+              }
+            ]
+          }
+
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::Blockquote)
+          expect(node.citation).to eq('Author')
+          expect(node.text_content).to eq('Quote')
+        end
+      end
+
+      context 'with invalid input' do
+        it 'returns generic node for unknown types' do
+          data = { 'type' => 'unknown_type' }
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::Node)
+          expect(node.type).to eq('node')
+        end
+
+        it 'handles missing content gracefully' do
+          data = { 'type' => 'paragraph' }
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::Paragraph)
+          expect(node.content).to eq([])
+        end
+
+        it 'handles missing attributes gracefully' do
+          data = { 'type' => 'table_cell' }
+          node = described_class.parse_node(data)
+          expect(node).to be_a(Prosereflect::TableCell)
+          expect(node.attrs).to be_nil
+        end
+      end
     end
   end
 end

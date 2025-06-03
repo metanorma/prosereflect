@@ -74,5 +74,12 @@ module Prosereflect
     def order
       attrs&.[]('order') || 1
     end
+
+    # Get text content with proper formatting
+    def text_content
+      return '' unless content
+
+      content.map { |item| item.respond_to?(:text_content) ? item.text_content : '' }.join("\n")
+    end
   end
 end

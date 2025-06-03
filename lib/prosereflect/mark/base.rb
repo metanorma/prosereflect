@@ -29,20 +29,52 @@ module Prosereflect
 
       # Convert to hash for serialization
       def to_h
-        result = { 'type' => type }
+        result = { 'type' => type.to_s }
         result['attrs'] = attrs if attrs && !attrs.empty?
         result
       end
+      alias to_hash to_h
 
       # Override initialize to ensure the type is set correctly
       def initialize(options = {})
-        super(options)
-        # Only set the type to PM_TYPE if no type was provided in options
-        self.type = begin
-          options[:type] || self.class.const_get(:PM_TYPE)
-        rescue StandardError
-          'mark'
+        if options.is_a?(Hash)
+          options = options.dup
+          options[:type] ||= begin
+            self.class.const_get(:PM_TYPE)
+          rescue StandardError
+            'mark'
+          end
+          super(options)
+        else
+          super()
+          self.type = begin
+            self.class.const_get(:PM_TYPE)
+          rescue StandardError
+            'mark'
+          end
         end
+      end
+
+      # Override == for comparison
+      def ==(other)
+        return false unless other.is_a?(Base)
+
+        type.to_s == other.type.to_s && attrs == other.attrs
+      end
+
+      # Override eql? for hash equality
+      def eql?(other)
+        self == other
+      end
+
+      # Override hash for hash equality
+      def hash
+        [type.to_s, attrs].hash
+      end
+
+      # Ensures YAML serialization outputs plain data instead of a Ruby object
+      def encode_with(coder)
+        coder.represent_map(nil, to_h)
       end
     end
   end
