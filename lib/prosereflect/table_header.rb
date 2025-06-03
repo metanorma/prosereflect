@@ -20,12 +20,20 @@ module Prosereflect
     end
 
     def initialize(attributes = {})
+      attributes[:content] ||= []
       super
-      self.content ||= []
     end
 
     def self.create(attrs = nil)
-      new(attrs: attrs)
+      new(type: PM_TYPE, attrs: attrs, content: [])
+    end
+
+    # Add text to the last paragraph, or create a new one if none exists
+    def add_text(text, marks = nil)
+      last_paragraph = content&.last
+      last_paragraph = add_paragraph if !last_paragraph || !last_paragraph.is_a?(Paragraph)
+      last_paragraph.add_text(text, marks)
+      self
     end
 
     # Set the scope of the header (row, col, rowgroup, or colgroup)
@@ -69,6 +77,16 @@ module Prosereflect
         abbr: abbr,
         colspan: colspan
       }.compact
+    end
+
+    # Override to_h to exclude nil attributes
+    def to_h
+      result = super
+      if result['attrs']
+        result['attrs'].reject! { |_, v| v.nil? }
+        result.delete('attrs') if result['attrs'].empty?
+      end
+      result
     end
   end
 end

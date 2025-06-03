@@ -25,7 +25,7 @@ module Prosereflect
     end
 
     def self.create(attrs = nil)
-      new(attrs: attrs, content: [])
+      new(type: PM_TYPE, attrs: attrs, content: [])
     end
 
     def rows
@@ -56,7 +56,7 @@ module Prosereflect
     def add_header(header_cells)
       row = TableRow.create
       header_cells.each do |cell_content|
-        header = TableHeader.new
+        header = TableHeader.create
         header.add_paragraph(cell_content)
         row.add_child(header)
       end
@@ -79,6 +79,17 @@ module Prosereflect
       rows_data.each do |row_data|
         add_row(row_data)
       end
+    end
+
+    # Override to_h to handle empty content and attributes properly
+    def to_h
+      result = super
+      result['content'] ||= []
+      if result['attrs']
+        result['attrs'] = result['attrs'].is_a?(Hash) && result['attrs'][:attrs] ? result['attrs'][:attrs] : result['attrs']
+        result.delete('attrs') if result['attrs'].empty?
+      end
+      result
     end
   end
 end

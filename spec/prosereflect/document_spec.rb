@@ -19,17 +19,409 @@ RSpec.describe Prosereflect::Document do
   end
 
   describe '.create' do
-    it 'creates an empty document' do
-      doc = described_class.new
-      expect(doc).to be_a(described_class)
-      expect(doc.type).to eq('doc')
-      expect(doc.content).to be_nil
+    it 'creates a simple document with a paragraph' do
+      document = described_class.new
+      document.add_paragraph('This is a test paragraph.')
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'paragraph',
+          'content' => [{
+            'type' => 'text',
+            'text' => 'This is a test paragraph.'
+          }]
+        }]
+      }
+
+      expect(document.to_h).to eq(expected)
     end
 
-    it 'creates a document with attributes' do
-      attrs = { 'id' => '1' }
-      doc = described_class.new(attrs: attrs)
-      expect(doc.attrs).to eq(attrs)
+    it 'creates a document with multiple paragraphs and styles' do
+      document = described_class.new
+
+      # Add a heading
+      heading = document.add_heading(1)
+      heading.add_text('Document Title')
+
+      # Add paragraphs with different styles
+      para1 = document.add_paragraph
+      para1.add_text('This is a paragraph with ')
+      para1.add_text('bold', [Prosereflect::Mark::Bold.new])
+      para1.add_text(' and ')
+      para1.add_text('italic', [Prosereflect::Mark::Italic.new])
+      para1.add_text(' text.')
+
+      para2 = document.add_paragraph
+      para2.add_text('This paragraph has ')
+      para2.add_text('underlined', [Prosereflect::Mark::Underline.new])
+      para2.add_text(' and ')
+      para2.add_text('struck through', [Prosereflect::Mark::Strike.new])
+      para2.add_text(' text.')
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'heading',
+          'attrs' => { 'level' => 1 },
+          'content' => [{
+            'type' => 'text',
+            'text' => 'Document Title'
+          }]
+        }, {
+          'type' => 'paragraph',
+          'content' => [{
+            'type' => 'text',
+            'text' => 'This is a paragraph with '
+          }, {
+            'type' => 'text',
+            'text' => 'bold',
+            'marks' => [{ 'type' => 'bold' }]
+          }, {
+            'type' => 'text',
+            'text' => ' and '
+          }, {
+            'type' => 'text',
+            'text' => 'italic',
+            'marks' => [{ 'type' => 'italic' }]
+          }, {
+            'type' => 'text',
+            'text' => ' text.'
+          }]
+        }, {
+          'type' => 'paragraph',
+          'content' => [{
+            'type' => 'text',
+            'text' => 'This paragraph has '
+          }, {
+            'type' => 'text',
+            'text' => 'underlined',
+            'marks' => [{ 'type' => 'underline' }]
+          }, {
+            'type' => 'text',
+            'text' => ' and '
+          }, {
+            'type' => 'text',
+            'text' => 'struck through',
+            'marks' => [{ 'type' => 'strike' }]
+          }, {
+            'type' => 'text',
+            'text' => ' text.'
+          }]
+        }]
+      }
+
+      expect(document.to_h).to eq(expected)
+    end
+
+    it 'creates a document with tables and lists' do
+      document = described_class.new
+
+      # Add a table
+      table = document.add_table
+      table.add_header(%w[Product Price Quantity])
+      table.add_row(['Widget', '$10.00', '5'])
+      table.add_row(['Gadget', '$15.00', '3'])
+
+      # Add an ordered list
+      list = document.add_ordered_list
+      list.start = 1
+      list.add_item('First item')
+      list.add_item('Second item with ')
+          .add_text('emphasis', [Prosereflect::Mark::Italic.new])
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'table',
+          'content' => [{
+            'type' => 'table_row',
+            'content' => [{
+              'type' => 'table_header',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => 'Product'
+                }]
+              }]
+            }, {
+              'type' => 'table_header',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => 'Price'
+                }]
+              }]
+            }, {
+              'type' => 'table_header',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => 'Quantity'
+                }]
+              }]
+            }]
+          }, {
+            'type' => 'table_row',
+            'content' => [{
+              'type' => 'table_cell',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => 'Widget'
+                }]
+              }]
+            }, {
+              'type' => 'table_cell',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => '$10.00'
+                }]
+              }]
+            }, {
+              'type' => 'table_cell',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => '5'
+                }]
+              }]
+            }]
+          }, {
+            'type' => 'table_row',
+            'content' => [{
+              'type' => 'table_cell',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => 'Gadget'
+                }]
+              }]
+            }, {
+              'type' => 'table_cell',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => '$15.00'
+                }]
+              }]
+            }, {
+              'type' => 'table_cell',
+              'content' => [{
+                'type' => 'paragraph',
+                'content' => [{
+                  'type' => 'text',
+                  'text' => '3'
+                }]
+              }]
+            }]
+          }]
+        }, {
+          'type' => 'ordered_list',
+          'attrs' => { 'start' => 1 },
+          'content' => [{
+            'type' => 'list_item',
+            'content' => [{
+              'type' => 'paragraph',
+              'content' => [{
+                'type' => 'text',
+                'text' => 'First item'
+              }]
+            }]
+          }, {
+            'type' => 'list_item',
+            'content' => [{
+              'type' => 'paragraph',
+              'content' => [{
+                'type' => 'text',
+                'text' => 'Second item with '
+              }, {
+                'type' => 'text',
+                'text' => 'emphasis',
+                'marks' => [{ 'type' => 'italic' }]
+              }]
+            }]
+          }]
+        }]
+      }
+
+      expect(document.to_h).to eq(expected)
+    end
+
+    it 'creates a document with code blocks and blockquotes' do
+      document = described_class.create
+      wrapper = document.add_code_block_wrapper
+      wrapper.line_numbers = true
+
+      code_block = wrapper.add_code_block
+      code_block.language = 'ruby'
+      code_block.content = "def example\n  puts 'Hello'\nend"
+
+      quote = document.add_blockquote
+      quote.citation = 'https://example.com'
+      quote.add_paragraph('A test quote')
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'code_block_wrapper',
+          'attrs' => {
+            'line_numbers' => true
+          },
+          'content' => [{
+            'type' => 'code_block',
+            'attrs' => {
+              'content' => "def example\n  puts 'Hello'\nend",
+              'language' => 'ruby'
+            }
+          }]
+        }, {
+          'type' => 'blockquote',
+          'attrs' => {
+            'citation' => 'https://example.com'
+          },
+          'content' => [{
+            'type' => 'paragraph',
+            'content' => [{
+              'type' => 'text',
+              'text' => 'A test quote'
+            }]
+          }]
+        }]
+      }
+
+      expect(document.to_h).to eq(expected)
+    end
+
+    it 'creates a document with mathematical content' do
+      document = described_class.new
+
+      # Add a heading
+      heading = document.add_heading(2)
+      heading.add_text('Mathematical Expressions')
+
+      # Add equations
+      para1 = document.add_paragraph
+      para1.add_text('The quadratic formula: x = -b ± ')
+      para1.add_text('√', [Prosereflect::Mark::Bold.new])
+      para1.add_text('(b')
+      para1.add_text('2', [Prosereflect::Mark::Superscript.new])
+      para1.add_text(' - 4ac) / 2a')
+
+      para2 = document.add_paragraph
+      para2.add_text('Water molecule: H')
+      para2.add_text('2', [Prosereflect::Mark::Subscript.new])
+      para2.add_text('O')
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'heading',
+          'attrs' => { 'level' => 2 },
+          'content' => [{
+            'type' => 'text',
+            'text' => 'Mathematical Expressions'
+          }]
+        }, {
+          'type' => 'paragraph',
+          'content' => [{
+            'type' => 'text',
+            'text' => 'The quadratic formula: x = -b ± '
+          }, {
+            'type' => 'text',
+            'text' => '√',
+            'marks' => [{ 'type' => 'bold' }]
+          }, {
+            'type' => 'text',
+            'text' => '(b'
+          }, {
+            'type' => 'text',
+            'text' => '2',
+            'marks' => [{ 'type' => 'superscript' }]
+          }, {
+            'type' => 'text',
+            'text' => ' - 4ac) / 2a'
+          }]
+        }, {
+          'type' => 'paragraph',
+          'content' => [{
+            'type' => 'text',
+            'text' => 'Water molecule: H'
+          }, {
+            'type' => 'text',
+            'text' => '2',
+            'marks' => [{ 'type' => 'subscript' }]
+          }, {
+            'type' => 'text',
+            'text' => 'O'
+          }]
+        }]
+      }
+
+      expect(document.to_h).to eq(expected)
+    end
+
+    it 'creates a document with images and links' do
+      document = described_class.new
+
+      # Add an image
+      image = document.add_image('example.jpg', 'Example image')
+      image.title = 'A beautiful landscape'
+      image.width = 800
+      image.height = 600
+
+      # Add a paragraph with links
+      para = document.add_paragraph
+      para.add_text('Visit our ')
+      link_text = Prosereflect::Text.new(text: 'website')
+      link_mark = Prosereflect::Mark::Link.new
+      link_mark.attrs = { 'href' => 'https://example.com' }
+      link_text.marks = [link_mark]
+      para.add_child(link_text)
+      para.add_text(' for more information.')
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'image',
+          'attrs' => {
+            'src' => 'example.jpg',
+            'alt' => 'Example image',
+            'title' => 'A beautiful landscape',
+            'width' => 800,
+            'height' => 600
+          }
+        }, {
+          'type' => 'paragraph',
+          'content' => [{
+            'type' => 'text',
+            'text' => 'Visit our '
+          }, {
+            'type' => 'text',
+            'text' => 'website',
+            'marks' => [{
+              'type' => 'link',
+              'attrs' => {
+                'href' => 'https://example.com'
+              }
+            }]
+          }, {
+            'type' => 'text',
+            'text' => ' for more information.'
+          }]
+        }]
+      }
+
+      expect(document.to_h).to eq(expected)
     end
   end
 
@@ -126,6 +518,32 @@ RSpec.describe Prosereflect::Document do
       expect(json).to be_a(String)
       expect(json).to include('"type":"doc"')
       expect(json).to include('"type":"paragraph"')
+    end
+  end
+
+  describe '#text_content' do
+    it 'returns plain text content from all nodes' do
+      document = described_class.new
+
+      # Add various types of content
+      document.add_heading(1).add_text('Title')
+
+      para = document.add_paragraph
+      para.add_text('This is ')
+      para.add_text('bold', [Prosereflect::Mark::Bold.new])
+      para.add_text(' text.')
+
+      list = document.add_bullet_list
+      list.add_item('First item')
+      list.add_item('Second item')
+
+      expected_text = "Title\nThis is bold text.\nFirst item\nSecond item"
+      expect(document.text_content).to eq(expected_text)
+    end
+
+    it 'handles empty documents' do
+      document = described_class.new
+      expect(document.text_content).to eq('')
     end
   end
 end

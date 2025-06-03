@@ -69,7 +69,7 @@ RSpec.describe Prosereflect::Node do
     it 'includes marks when present' do
       node = described_class.new(
         type: Prosereflect::Text.new(text: 'Hello'),
-        marks: [Prosereflect::Attribute::Bold.new]
+        marks: [Prosereflect::Mark::Bold.new]
       )
 
       hash = node.to_hash
@@ -142,98 +142,284 @@ RSpec.describe Prosereflect::Node do
   end
 
   describe '.create' do
-    it 'creates a node with the specified type' do
-      node = described_class.new('test_node')
-      expect(node.type).to eq('test_node')
+    it 'creates a simple node' do
+      node = described_class.create('test_node')
+
+      expected = {
+        'type' => 'test_node'
+      }
+
+      expect(node.to_h).to eq(expected)
     end
 
     it 'creates a node with attributes' do
-      attrs = { 'key' => 'value' }
-      node = described_class.new('test_node', attrs)
+      node = described_class.create('test_node', {
+                                      'key' => 'value',
+                                      'number' => 42,
+                                      'flag' => true
+                                    })
 
-      expect(node.type).to eq('test_node')
-      expect(node.attrs).to eq(attrs)
-    end
+      expected = {
+        'type' => 'test_node',
+        'attrs' => {
+          'key' => 'value',
+          'number' => 42,
+          'flag' => true
+        }
+      }
 
-    it 'initializes with empty content' do
-      node = described_class.new('test_node')
-      expect(node.content).to eq([])
-    end
-  end
-
-  describe '#find_all' do
-    let(:node) do
-      root = described_class.new({ 'type' => 'root' })
-
-      para1 = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
-      para1.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Text 1' }))
-
-      para2 = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
-      para2.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Text 2' }))
-
-      root.add_child(para1)
-      root.add_child(para2)
-      root
-    end
-
-    it 'finds all nodes of a specific type' do
-      paragraphs = node.find_all('paragraph')
-      expect(paragraphs.size).to eq(2)
-      expect(paragraphs).to all(be_a(Prosereflect::Paragraph))
-    end
-
-    it 'finds all nested nodes of a specific type' do
-      texts = node.find_all('text')
-      expect(texts.size).to eq(2)
-      expect(texts).to all(be_a(Prosereflect::Text))
-    end
-
-    it 'returns empty array if no matching nodes are found' do
-      result = node.find_all('nonexistent')
-      expect(result).to eq([])
+      expect(node.to_h).to eq(expected)
     end
   end
 
-  describe '#find_children' do
-    let(:node) do
-      root = described_class.new({ 'type' => 'root' })
+  describe 'node structure' do
+    it 'creates a node with content' do
+      node = described_class.create('parent')
+      node.add_child(Prosereflect::Text.create('First child'))
+      node.add_child(Prosereflect::Text.create('Second child'))
 
-      root.add_child(Prosereflect::Paragraph.new({ 'type' => 'paragraph' }))
-      root.add_child(Prosereflect::Table.new({ 'type' => 'table' }))
-      root.add_child(Prosereflect::Paragraph.new({ 'type' => 'paragraph' }))
+      expected = {
+        'type' => 'parent',
+        'content' => [
+          {
+            'type' => 'text',
+            'text' => 'First child'
+          },
+          {
+            'type' => 'text',
+            'text' => 'Second child'
+          }
+        ]
+      }
 
-      root
+      expect(node.to_h).to eq(expected)
     end
 
-    it 'finds direct children of a specific type' do
-      paragraphs = node.find_children(Prosereflect::Paragraph)
-      expect(paragraphs.size).to eq(2)
-      expect(paragraphs).to all(be_a(Prosereflect::Paragraph))
-    end
+    it 'creates a node with complex content' do
+      node = described_class.create('root')
 
-    it 'returns empty array if no matching children are found' do
-      result = node.find_children(String)
-      expect(result).to eq([])
-    end
-  end
-
-  describe '#text_content' do
-    it 'returns empty string for node without content' do
-      node = described_class.new({ 'type' => 'empty' })
-      expect(node.text_content).to eq('')
-    end
-
-    it 'concatenates text content from all child nodes' do
-      node = described_class.new({ 'type' => 'parent' })
-
-      para = Prosereflect::Paragraph.new({ 'type' => 'paragraph' })
-      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'Hello' }))
-      para.add_child(Prosereflect::HardBreak.new({ 'type' => 'hard_break' }))
-      para.add_child(Prosereflect::Text.new({ 'type' => 'text', 'text' => 'World' }))
-
+      # Add a paragraph with formatted text
+      para = Prosereflect::Paragraph.create
+      para.add_child(Prosereflect::Text.create('Bold', [Prosereflect::Mark::Bold.create]))
+      para.add_child(Prosereflect::Text.create(' and '))
+      para.add_child(Prosereflect::Text.create('italic', [Prosereflect::Mark::Italic.create]))
       node.add_child(para)
 
-      expect(node.text_content).to eq("Hello\nWorld")
+      # Add a list
+      list = Prosereflect::BulletList.create
+      list_item = Prosereflect::ListItem.create
+      list_item.add_child(Prosereflect::Paragraph.create)
+      list_item.content.first.add_child(Prosereflect::Text.create('List item'))
+      list.add_child(list_item)
+      node.add_child(list)
+
+      expected = {
+        'type' => 'root',
+        'content' => [
+          {
+            'type' => 'paragraph',
+            'content' => [
+              {
+                'type' => 'text',
+                'text' => 'Bold',
+                'marks' => [{ 'type' => 'bold' }]
+              },
+              {
+                'type' => 'text',
+                'text' => ' and '
+              },
+              {
+                'type' => 'text',
+                'text' => 'italic',
+                'marks' => [{ 'type' => 'italic' }]
+              }
+            ]
+          },
+          {
+            'type' => 'bullet_list',
+            'attrs' => {
+              'bullet_style' => nil
+            },
+            'content' => [
+              {
+                'type' => 'list_item',
+                'content' => [
+                  {
+                    'type' => 'paragraph',
+                    'content' => [
+                      {
+                        'type' => 'text',
+                        'text' => 'List item'
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+      expect(node.to_h).to eq(expected)
+    end
+  end
+
+  describe 'node operations' do
+    describe '#add_child' do
+      it 'adds a child node and returns it' do
+        parent = described_class.create('parent')
+        child = Prosereflect::Text.create('Child node')
+
+        result = parent.add_child(child)
+        expect(result).to eq(child)
+        expect(parent.content).to eq([child])
+      end
+
+      it 'maintains child order' do
+        parent = described_class.create('parent')
+        first = Prosereflect::Text.create('First')
+        second = Prosereflect::Text.create('Second')
+        third = Prosereflect::Text.create('Third')
+
+        parent.add_child(first)
+        parent.add_child(second)
+        parent.add_child(third)
+
+        expect(parent.content).to eq([first, second, third])
+        expect(parent.text_content).to eq('FirstSecondThird')
+      end
+    end
+
+    describe '#find_first' do
+      let(:node) do
+        root = described_class.create('root')
+        para = Prosereflect::Paragraph.create
+        text = Prosereflect::Text.create('Hello')
+        para.add_child(text)
+        root.add_child(para)
+        root
+      end
+
+      it 'finds nodes by type' do
+        expect(node.find_first('root')).to eq(node)
+        expect(node.find_first('paragraph')).to be_a(Prosereflect::Paragraph)
+        expect(node.find_first('text')).to be_a(Prosereflect::Text)
+        expect(node.find_first('nonexistent')).to be_nil
+      end
+    end
+
+    describe '#find_all' do
+      let(:node) do
+        root = described_class.create('root')
+
+        # First paragraph
+        para1 = Prosereflect::Paragraph.create
+        para1.add_child(Prosereflect::Text.create('First'))
+        root.add_child(para1)
+
+        # Second paragraph
+        para2 = Prosereflect::Paragraph.create
+        para2.add_child(Prosereflect::Text.create('Second'))
+        root.add_child(para2)
+
+        root
+      end
+
+      it 'finds all nodes of a type' do
+        expect(node.find_all('paragraph').size).to eq(2)
+        expect(node.find_all('text').size).to eq(2)
+        expect(node.find_all('nonexistent')).to eq([])
+      end
+    end
+
+    describe '#find_children' do
+      let(:node) do
+        root = described_class.create('root')
+        root.add_child(Prosereflect::Paragraph.create)
+        root.add_child(Prosereflect::Table.create)
+        root.add_child(Prosereflect::Paragraph.create)
+        root
+      end
+
+      it 'finds direct children by class' do
+        paragraphs = node.find_children(Prosereflect::Paragraph)
+        expect(paragraphs.size).to eq(2)
+        expect(paragraphs).to all(be_a(Prosereflect::Paragraph))
+
+        tables = node.find_children(Prosereflect::Table)
+        expect(tables.size).to eq(1)
+        expect(tables.first).to be_a(Prosereflect::Table)
+      end
+    end
+
+    describe '#text_content' do
+      it 'concatenates text from all children' do
+        root = described_class.create('root')
+
+        para = Prosereflect::Paragraph.create
+        para.add_child(Prosereflect::Text.create('Hello'))
+        para.add_child(Prosereflect::HardBreak.create)
+        para.add_child(Prosereflect::Text.create('World'))
+        root.add_child(para)
+
+        expect(root.text_content).to eq("Hello\nWorld")
+      end
+
+      it 'returns empty string for empty node' do
+        node = described_class.create('empty')
+        expect(node.text_content).to eq('')
+      end
+    end
+  end
+
+  describe 'serialization' do
+    it 'serializes a node with all properties' do
+      node = described_class.create('test_node', {
+                                      'key' => 'value',
+                                      'number' => 42
+                                    })
+
+      text = Prosereflect::Text.create('Content', [
+                                         Prosereflect::Mark::Bold.create,
+                                         Prosereflect::Mark::Link.create({ 'href' => 'https://example.com' })
+                                       ])
+
+      node.add_child(text)
+
+      expected = {
+        'type' => 'test_node',
+        'attrs' => {
+          'key' => 'value',
+          'number' => 42
+        },
+        'content' => [
+          {
+            'type' => 'text',
+            'text' => 'Content',
+            'marks' => [
+              { 'type' => 'bold' },
+              {
+                'type' => 'link',
+                'attrs' => {
+                  'href' => 'https://example.com'
+                }
+              }
+            ]
+          }
+        ]
+      }
+
+      expect(node.to_h).to eq(expected)
+    end
+
+    it 'omits optional properties when empty' do
+      node = described_class.create('test_node')
+
+      expected = {
+        'type' => 'test_node'
+      }
+
+      expect(node.to_h).to eq(expected)
     end
   end
 end

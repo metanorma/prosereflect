@@ -10,14 +10,30 @@ module Prosereflect
         # Convert a Prosereflect::Document to HTML
         def convert(document)
           builder = Nokogiri::HTML::Builder.new do |doc|
-            doc.html do
-              doc.body do
-                process_node(document, doc)
-              end
+            doc.div do
+              process_node(document, doc)
             end
           end
 
-          builder.to_html
+          doc = Nokogiri::HTML(builder.to_html)
+          html = doc.at_css('div').children.to_html
+
+          code_blocks = {}
+          html.scan(%r{<code[^>]*>(.*?)</code>}m).each_with_index do |match, i|
+            code_content = match[0]
+            placeholder = "CODE_BLOCK_#{i}"
+            code_blocks[placeholder] = code_content
+            html.sub!(code_content, placeholder)
+          end
+
+          # Remove newlines and spaces
+          html = html.gsub(/\n\s*/, '')
+
+          code_blocks.each do |placeholder, content|
+            html.sub!(placeholder, content)
+          end
+
+          html
         end
 
         private
@@ -258,11 +274,16 @@ module Prosereflect
 
         # Process a bullet list node
         def process_bullet_list(node, builder)
-          attrs = {}
-          attrs[:style] = "list-style-type: #{node.bullet_style}" if node.bullet_style
-
-          builder.ul(attrs) do
-            process_children(node, builder)
+          builder.ul do
+            node.content&.each do |child|
+              if child.type == 'list_item'
+                process_node(child, builder)
+              else
+                builder.li do
+                  process_node(child, builder)
+                end
+              end
+            end
           end
         end
 
@@ -310,20 +331,22 @@ module Prosereflect
         # Process a code block wrapper node
         def process_code_block_wrapper(node, builder)
           attrs = {}
-          attrs['data-line-numbers'] = 'true' if node.line_numbers
-          attrs['data-highlight-lines'] = node.highlight_lines.join(',') if node.highlight_lines&.any?
+          if node.attrs
+            attrs['data-line-numbers'] = 'true' if node.attrs['line_numbers']
+            if node.attrs['highlight_lines'].is_a?(Array) && !node.attrs['highlight_lines'].empty? && node.attrs['highlight_lines'] != [0]
+              attrs['data-highlight-lines'] = node.attrs['highlight_lines'].join(',')
+            end
+          end
 
           builder.pre(attrs) do
-            node.code_blocks&.each do |code_block|
-              process_node(code_block, builder)
-            end
+            process_children(node, builder)
           end
         end
 
         # Process a code block node
         def process_code_block(node, builder)
           attrs = {}
-          attrs[:class] = "language-#{node.language}" if node.language
+          attrs['class'] = "language-#{node.language}" if node.language
 
           builder.code(attrs) do
             builder.text node.content

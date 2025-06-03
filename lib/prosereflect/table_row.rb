@@ -16,21 +16,21 @@ module Prosereflect
     end
 
     def initialize(opts = {})
+      opts[:content] ||= []
       super
-      self.content ||= []
     end
 
     def self.create(attrs = nil)
-      new(attrs: attrs)
+      new(type: PM_TYPE, attrs: attrs, content: [])
     end
 
     def cells
-      content
+      content || []
     end
 
     # Add a cell to the row
-    def add_cell(content_text = nil)
-      cell = TableCell.create
+    def add_cell(content_text = nil, attrs: nil)
+      cell = TableCell.create(attrs)
 
       if content_text
         paragraph = cell.add_paragraph
@@ -39,6 +39,17 @@ module Prosereflect
 
       add_child(cell)
       cell
+    end
+
+    # Override to_h to handle empty content and attributes properly
+    def to_h
+      result = super
+      result['content'] ||= []
+      if result['attrs']
+        result['attrs'] = result['attrs'].is_a?(Hash) && result['attrs'][:attrs] ? result['attrs'][:attrs] : result['attrs']
+        result.delete('attrs') if result['attrs'].empty?
+      end
+      result
     end
   end
 end

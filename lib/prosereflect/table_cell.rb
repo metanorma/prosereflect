@@ -16,12 +16,12 @@ module Prosereflect
     end
 
     def initialize(attributes = {})
+      attributes[:content] ||= []
       super
-      self.content ||= []
     end
 
     def self.create(attrs = nil)
-      new(attrs: attrs)
+      new(type: PM_TYPE, attrs: attrs, content: [])
     end
 
     def paragraphs
@@ -46,6 +46,17 @@ module Prosereflect
 
       add_child(paragraph)
       paragraph
+    end
+
+    # Override to_h to handle empty content and attributes properly
+    def to_h
+      result = super
+      result['content'] ||= []
+      if result['attrs']
+        result['attrs'] = result['attrs'].is_a?(Hash) && result['attrs'][:attrs] ? result['attrs'][:attrs] : result['attrs']
+        result.delete('attrs') if result['attrs'].empty?
+      end
+      result
     end
   end
 end
