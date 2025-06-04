@@ -20,6 +20,7 @@ require_relative 'list_item'
 require_relative 'blockquote'
 require_relative 'horizontal_rule'
 require_relative 'image'
+require_relative 'user'
 
 module Prosereflect
   class Parser
@@ -69,6 +70,8 @@ module Prosereflect
                      HorizontalRule
                    when 'image'
                      Image
+                   when 'user'
+                     User
                    else
                      Node
                    end

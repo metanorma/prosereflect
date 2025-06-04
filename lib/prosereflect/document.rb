@@ -10,6 +10,7 @@ require_relative 'blockquote'
 require_relative 'horizontal_rule'
 require_relative 'code_block_wrapper'
 require_relative 'heading'
+require_relative 'user'
 
 module Prosereflect
   # Document class represents a ProseMirror document.
@@ -91,6 +92,14 @@ module Prosereflect
       image.alt = alt if alt
       add_child(image)
       image
+    end
+
+    # Add a user mention to the document
+    def add_user(id)
+      user = User.new
+      user.id = id
+      add_child(user)
+      user
     end
 
     # Add a bullet list to the document

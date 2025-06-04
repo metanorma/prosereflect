@@ -27,6 +27,7 @@ require_relative '../image'
 require_relative '../code_block_wrapper'
 require_relative '../code_block'
 require_relative '../heading'
+require_relative '../user'
 
 module Prosereflect
   module Input
@@ -93,6 +94,8 @@ module Prosereflect
             create_horizontal_rule_node(html_node)
           when 'img'
             create_image_node(html_node)
+          when 'user-mention'
+            create_user_node(html_node)
           when 'div', 'span'
             # For containers, we process their children
             handle_container_node(html_node)
@@ -485,6 +488,16 @@ module Prosereflect
           heading.level = level
           process_node_children(html_node, heading)
           heading
+        end
+
+        # Create a user mention node from HTML user-mention element
+        def create_user_node(html_node)
+          # Skip user mentions without data-id
+          return nil unless html_node['data-id']
+
+          user = User.new
+          user.id = html_node['data-id']
+          user
         end
       end
     end

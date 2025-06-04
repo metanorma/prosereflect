@@ -76,7 +76,9 @@ Metrics/AbcSize:
 # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
 # AllowedMethods: refine
 Metrics/BlockLength:
-  Max: 640
+  Exclude:
+    - 'spec/prosereflect/input/html_spec.rb'
+  Max: 500
 
 # Offense count: 3
 Metrics/ClassLength:
@@ -88,7 +90,7 @@ Metrics/ClassLength:
 # Offense count: 4
 # Configuration parameters: AllowedMethods, AllowedPatterns.
 Metrics/CyclomaticComplexity:
-  Max: 49
+  Max: 50
 
 # Offense count: 6
 # Configuration parameters: CountComments, CountAsOne, AllowedMethods, AllowedPatterns.
