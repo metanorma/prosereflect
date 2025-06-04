@@ -297,5 +297,73 @@ end</code></pre>'
       expected = '<p>Paragraph 1</p><p>Paragraph <strong>2</strong></p><table><tbody><tr><td>Cell 1</td><td>Cell 2</td></tr></tbody></table>'
       expect(html).to eq(expected)
     end
+
+    it 'renders user mentions correctly' do
+      document = Prosereflect::Document.new
+      user = Prosereflect::User.new
+      user.id = '123'
+      document.add_child(user)
+
+      html = described_class.convert(document)
+      expect(html).to eq('<user-mention data-id="123"></user-mention>')
+    end
+
+    it 'renders user mentions in paragraphs' do
+      document = Prosereflect::Document.new
+      paragraph = document.add_paragraph
+      paragraph.add_text('Hello ')
+
+      user = Prosereflect::User.new
+      user.id = '123'
+      paragraph.add_child(user)
+
+      paragraph.add_text('!')
+
+      html = described_class.convert(document)
+      expect(html).to eq('<p>Hello <user-mention data-id="123"></user-mention>!</p>')
+    end
+
+    it 'renders multiple user mentions' do
+      document = Prosereflect::Document.new
+      paragraph = document.add_paragraph
+      paragraph.add_text('Mentioned: ')
+
+      user1 = Prosereflect::User.new
+      user1.id = '123'
+      paragraph.add_child(user1)
+
+      paragraph.add_text(' and ')
+
+      user2 = Prosereflect::User.new
+      user2.id = '456'
+      paragraph.add_child(user2)
+
+      html = described_class.convert(document)
+      expect(html).to eq('<p>Mentioned: <user-mention data-id="123"></user-mention> and <user-mention data-id="456"></user-mention></p>')
+    end
+
+    it 'renders user mentions with other marks' do
+      document = Prosereflect::Document.new
+      paragraph = document.add_paragraph
+
+      bold_text = Prosereflect::Text.new(text: 'Bold')
+      bold_text.marks = [Prosereflect::Mark::Bold.new]
+      paragraph.add_child(bold_text)
+
+      paragraph.add_text(' and ')
+
+      user = Prosereflect::User.new
+      user.id = '123'
+      paragraph.add_child(user)
+
+      paragraph.add_text(' and ')
+
+      italic_text = Prosereflect::Text.new(text: 'italic')
+      italic_text.marks = [Prosereflect::Mark::Italic.new]
+      paragraph.add_child(italic_text)
+
+      html = described_class.convert(document)
+      expect(html).to eq('<p><strong>Bold</strong> and <user-mention data-id="123"></user-mention> and <em>italic</em></p>')
+    end
   end
 end

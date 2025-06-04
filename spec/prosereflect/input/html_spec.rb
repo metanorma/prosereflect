@@ -698,5 +698,100 @@ RSpec.describe Prosereflect::Input::Html do
       document = described_class.parse(html)
       expect(document.to_h).to eq(expected)
     end
+
+    it 'parses user mentions correctly' do
+      html = '<user-mention data-id="123"></user-mention>'
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'user',
+          'attrs' => {
+            'id' => '123'
+          },
+          'content' => []
+        }]
+      }
+
+      document = described_class.parse(html)
+      expect(document.to_h).to eq(expected)
+    end
+
+    it 'parses user mentions in paragraphs' do
+      html = '<p>Hello <user-mention data-id="123"></user-mention>!</p>'
+
+      expected = {
+        'type' => 'doc',
+        'content' => [{
+          'type' => 'paragraph',
+          'content' => [
+            {
+              'type' => 'text',
+              'text' => 'Hello '
+            },
+            {
+              'type' => 'user',
+              'attrs' => {
+                'id' => '123'
+              },
+              'content' => []
+            },
+            {
+              'type' => 'text',
+              'text' => '!'
+            }
+          ]
+        }]
+      }
+
+      document = described_class.parse(html)
+      expect(document.to_h).to eq(expected)
+    end
+
+    it 'ignores user mentions without data-id' do
+      html = '<user-mention></user-mention>'
+
+      expected = {
+        'type' => 'doc'
+      }
+
+      document = described_class.parse(html)
+      expect(document.to_h).to eq(expected)
+    end
+
+    it 'parses multiple user mentions' do
+      html = '<div>Mentioned: <user-mention data-id="123"></user-mention> and <user-mention data-id="456"></user-mention></div>'
+
+      expected = {
+        'type' => 'doc',
+        'content' => [
+          {
+            'type' => 'text',
+            'text' => 'Mentioned: '
+          },
+          {
+            'type' => 'user',
+            'attrs' => {
+              'id' => '123'
+            },
+            'content' => []
+          },
+          {
+            'type' => 'text',
+            'text' => ' and '
+          },
+          {
+            'type' => 'user',
+            'attrs' => {
+              'id' => '456'
+            },
+            'content' => []
+          }
+        ]
+      }
+
+      document = described_class.parse(html)
+      expect(document.to_h).to eq(expected)
+    end
   end
 end

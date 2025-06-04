@@ -63,6 +63,8 @@ module Prosereflect
             builder.br
           when 'image'
             process_image(node, builder)
+          when 'user'
+            process_user(node, builder)
           when 'bullet_list'
             process_bullet_list(node, builder)
           when 'ordered_list'
@@ -270,6 +272,11 @@ module Prosereflect
           attrs[:height] = node.height if node.height
 
           builder.img(attrs)
+        end
+
+        # Process a user mention node
+        def process_user(node, builder)
+          builder << "<user-mention data-id=\"#{node.id}\"></user-mention>"
         end
 
         # Process a bullet list node

@@ -15,6 +15,7 @@ require_relative 'prosereflect/document'
 require_relative 'prosereflect/parser'
 require_relative 'prosereflect/input/html'
 require_relative 'prosereflect/output/html'
+require_relative 'prosereflect/user'
 
 module Prosereflect
   class Error < StandardError; end
