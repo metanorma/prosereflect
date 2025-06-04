@@ -41,15 +41,6 @@ module Prosereflect
         result['attrs'] = attrs_hash unless attrs_hash.empty?
       end
 
-      # Ensure highlight_lines is an array
-      if result['content']&.any?
-        result['content'].each do |node|
-          if node['attrs']&.key?('highlight_lines') && node['attrs']['highlight_lines'].is_a?(String)
-            node['attrs']['highlight_lines'] = [node['attrs']['highlight_lines'].to_i]
-          end
-        end
-      end
-
       result
     end
 
