@@ -141,6 +141,44 @@ paragraph = document.paragraphs.first
 text_content = paragraph.text_content # "This is a bold text in a paragraph."
 ----
 
+==== User Mentions
+
+The gem supports user mentions in documents, which can be useful for social features or collaborative editing.
+
+[source,ruby]
+----
+# Create a document with user mentions
+document = Prosereflect::Document.create
+paragraph = document.add_paragraph('Hello ')
+
+# Add a user mention
+user = Prosereflect::User.new
+user.id = '123'
+paragraph.add_child(user)
+
+paragraph.add_text('!')
+
+# Convert to HTML
+html = Prosereflect::Output::Html.convert(document)
+# => "<p>Hello <user-mention data-id=\"123\"></user-mention>!</p>"
+
+# Parse HTML with user mentions
+html_content = '<p>Hello <user-mention data-id="123"></user-mention>!</p>'
+document = Prosereflect::Input::Html.parse(html_content)
+
+# Access user mentions
+user_mentions = document.find_all('user')
+first_user = user_mentions.first
+user_id = first_user.id # => "123"
+----
+
+User mentions are represented as `<user-mention>` elements in HTML with a `data-id` attribute containing the user's identifier. When parsing HTML, these elements are converted to `User` nodes in the document model.
+
+Common use cases:
+- Mentioning users in comments or messages
+- Tagging users in collaborative documents
+- Tracking user references in content
+
 ==== To HTML
 
 [source,ruby]
@@ -197,12 +235,12 @@ objects.
 | +content          |
 +-------------------+
          |
-    +----+----+---------------------+
-    |         |                     |
-+---v---+ +---v----------+  +-------v--------+
-|Table  | |  Paragraph   |  |     Text       |
-|       | |              |  |                |
-+---+---+ +--------------+  +----------------+
+    +----+----+---------------------+-------------+
+    |         |                     |             |
++---v---+ +---v----------+  +-------v--------+  +-v-----+
+|Table  | |  Paragraph   |  |     Text       |  | User  |
+|       | |              |  |                |  |       |
++---+---+ +--------------+  +----------------+  +-------+
     |
     |
 +---v-----------+
@@ -244,6 +282,14 @@ Represents a paragraph of text.
 Represents a text node.
 
 `text`:: The text content of the node
+
+=== User
+
+Represents a user mention in the document.
+
+`id`:: The unique identifier of the referenced user
+`type`:: Always set to "user"
+`content`:: Always empty (user mentions cannot have child nodes)
 
 === Table
 
