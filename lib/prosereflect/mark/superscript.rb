@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 # {
 #   type: "superscript"
 # }
@@ -9,7 +7,7 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Superscript < Base
-      PM_TYPE = 'superscript'
+      PM_TYPE = "superscript"
     end
   end
 end

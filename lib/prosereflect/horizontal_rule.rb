@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-
 module Prosereflect
   # HorizontalRule class represents a horizontal rule in ProseMirror.
   class HorizontalRule < Node
-    PM_TYPE = 'horizontal_rule'
+    PM_TYPE = "horizontal_rule"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :style, :string
     attribute :width, :string
     attribute :thickness, :integer
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'attrs', to: :attrs
-      map 'content', to: :content
+      map "type", to: :type, render_default: true
+      map "attrs", to: :attrs
+      map "content", to: :content
     end
 
     def initialize(attributes = {})
@@ -31,36 +31,36 @@ module Prosereflect
     def style=(value)
       @style = value
       self.attrs ||= {}
-      attrs['style'] = value
+      attrs["style"] = value
     end
 
     def style
-      @style || attrs&.[]('style')
+      @style || attrs&.[]("style")
     end
 
     def width=(value)
       @width = value
       self.attrs ||= {}
-      attrs['width'] = value
+      attrs["width"] = value
     end
 
     def width
-      @width || attrs&.[]('width')
+      @width || attrs&.[]("width")
     end
 
     def thickness=(value)
       @thickness = value
       self.attrs ||= {}
-      attrs['thickness'] = value
+      attrs["thickness"] = value
     end
 
     def thickness
-      @thickness || attrs&.[]('thickness')
+      @thickness || attrs&.[]("thickness")
     end
 
     # Override content-related methods since horizontal rules don't have content
     def add_child(*)
-      raise NotImplementedError, 'Horizontal rule nodes cannot have children'
+      raise NotImplementedError, "Horizontal rule nodes cannot have children"
     end
 
     def content

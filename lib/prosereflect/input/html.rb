@@ -1,33 +1,6 @@
 # frozen_string_literal: true
 
-require 'nokogiri'
-require_relative '../document'
-require_relative '../paragraph'
-require_relative '../text'
-require_relative '../table'
-require_relative '../table_row'
-require_relative '../table_cell'
-require_relative '../table_header'
-require_relative '../hard_break'
-require_relative '../mark/bold'
-require_relative '../mark/italic'
-require_relative '../mark/code'
-require_relative '../mark/link'
-require_relative '../mark/strike'
-require_relative '../mark/subscript'
-require_relative '../mark/superscript'
-require_relative '../mark/underline'
-require_relative '../attribute/href'
-require_relative '../ordered_list'
-require_relative '../bullet_list'
-require_relative '../list_item'
-require_relative '../blockquote'
-require_relative '../horizontal_rule'
-require_relative '../image'
-require_relative '../code_block_wrapper'
-require_relative '../code_block'
-require_relative '../heading'
-require_relative '../user'
+require "nokogiri"
 
 module Prosereflect
   module Input
@@ -38,7 +11,7 @@ module Prosereflect
           html_doc = Nokogiri::HTML(html)
           document = Document.create # Use create instead of new to initialize content array
 
-          content_node = html_doc.at_css('body') || html_doc.root
+          content_node = html_doc.at_css("body") || html_doc.root
 
           # Process all child nodes
           process_node_children(content_node, document)
@@ -65,43 +38,43 @@ module Prosereflect
 
         # Convert an HTML node to a ProseMirror node
         def convert_node(html_node)
-          return nil if html_node.comment? || html_node.text? && html_node.text.strip.empty?
+          return nil if html_node.comment? || (html_node.text? && html_node.text.strip.empty?)
 
           case html_node.name
-          when 'text', '#text'
+          when "text", "#text"
             create_text_node(html_node)
-          when 'p'
+          when "p"
             create_paragraph_node(html_node)
           when /^h([1-6])$/
             create_heading_node(html_node, Regexp.last_match(1).to_i)
-          when 'br'
+          when "br"
             HardBreak.new
-          when 'table'
+          when "table"
             create_table_node(html_node)
-          when 'tr'
+          when "tr"
             create_table_row_node(html_node)
-          when 'th', 'td'
+          when "th", "td"
             create_table_cell_node(html_node)
-          when 'ol'
+          when "ol"
             create_ordered_list_node(html_node)
-          when 'ul'
+          when "ul"
             create_bullet_list_node(html_node)
-          when 'li'
+          when "li"
             create_list_item_node(html_node)
-          when 'blockquote'
+          when "blockquote"
             create_blockquote_node(html_node)
-          when 'hr'
+          when "hr"
             create_horizontal_rule_node(html_node)
-          when 'img'
+          when "img"
             create_image_node(html_node)
-          when 'user-mention'
+          when "user-mention"
             create_user_node(html_node)
-          when 'div', 'span'
+          when "div", "span"
             # For containers, we process their children
             handle_container_node(html_node)
-          when 'pre'
+          when "pre"
             create_code_block_wrapper(html_node)
-          when 'strong', 'b', 'em', 'i', 'code', 'a', 'strike', 's', 'del', 'sub', 'sup', 'u'
+          when "strong", "b", "em", "i", "code", "a", "strike", "s", "del", "sub", "sup", "u"
             # For inline elements with text styling, we handle differently
             handle_styled_text(html_node)
           else
@@ -126,13 +99,13 @@ module Prosereflect
         def create_table_node(html_node)
           table = Table.new
 
-          thead = html_node.at_css('thead')
-          thead&.css('tr')&.each do |tr|
+          thead = html_node.at_css("thead")
+          thead&.css("tr")&.each do |tr|
             process_table_row(tr, table, true)
           end
 
-          tbody = html_node.at_css('tbody') || html_node
-          tbody.css('tr').each do |tr|
+          tbody = html_node.at_css("tbody") || html_node
+          tbody.css("tr").each do |tr|
             process_table_row(tr, table, false)
           end
 
@@ -142,7 +115,7 @@ module Prosereflect
         # Process a table row
         def create_table_row_node(html_node)
           row = TableRow.new
-          html_node.css('th, td').each do |cell|
+          html_node.css("th, td").each do |cell|
             row.add_child(create_table_cell_node(cell))
           end
           row
@@ -157,13 +130,13 @@ module Prosereflect
         # Create a table cell node from HTML cell
         def create_table_cell_node(html_node)
           # Create either a TableHeader or TableCell based on the tag name
-          cell = if html_node.name == 'th'
+          cell = if html_node.name == "th"
                    header = TableHeader.create
 
                    # Handle header-specific attributes
-                   header.scope = html_node['scope'] if html_node['scope']
-                   header.abbr = html_node['abbr'] if html_node['abbr']
-                   header.colspan = html_node['colspan'] if html_node['colspan']
+                   header.scope = html_node["scope"] if html_node["scope"]
+                   header.abbr = html_node["abbr"] if html_node["abbr"]
+                   header.colspan = html_node["colspan"] if html_node["colspan"]
 
                    header
                  else
@@ -184,7 +157,7 @@ module Prosereflect
         # Handle a container-like node (div, span, etc.)
         def handle_container_node(html_node)
           # For top-level divs, process children directly
-          if html_node.name == 'div'
+          if html_node.name == "div"
             results = []
             html_node.children.each do |child|
               next if child.text? && child.text.strip.empty?
@@ -224,38 +197,38 @@ module Prosereflect
         def handle_styled_text(html_node)
           # Create mark based on the current node
           mark = case html_node.name
-                 when 'strong', 'b'
+                 when "strong", "b"
                    mark = Mark::Bold.new
-                   mark.type = 'bold'
+                   mark.type = "bold"
                    mark
-                 when 'em', 'i'
+                 when "em", "i"
                    mark = Mark::Italic.new
-                   mark.type = 'italic'
+                   mark.type = "italic"
                    mark
-                 when 'code'
+                 when "code"
                    mark = Mark::Code.new
-                   mark.type = 'code'
+                   mark.type = "code"
                    mark
-                 when 'a'
+                 when "a"
                    mark = Mark::Link.new
-                   mark.type = 'link'
-                   mark.attrs = { 'href' => html_node['href'] } if html_node['href']
+                   mark.type = "link"
+                   mark.attrs = { "href" => html_node["href"] } if html_node["href"]
                    mark
-                 when 'strike', 's', 'del'
+                 when "strike", "s", "del"
                    mark = Mark::Strike.new
-                   mark.type = 'strike'
+                   mark.type = "strike"
                    mark
-                 when 'sub'
+                 when "sub"
                    mark = Mark::Subscript.new
-                   mark.type = 'subscript'
+                   mark.type = "subscript"
                    mark
-                 when 'sup'
+                 when "sup"
                    mark = Mark::Superscript.new
-                   mark.type = 'superscript'
+                   mark.type = "superscript"
                    mark
-                 when 'u'
+                 when "u"
                    mark = Mark::Underline.new
-                   mark.type = 'underline'
+                   mark.type = "underline"
                    mark
                  end
 
@@ -292,7 +265,8 @@ module Prosereflect
         def contains_only_text_or_inline(node)
           node.children.all? do |child|
             child.text? ||
-              %w[strong b em i code a br span strike s del sub sup u].include?(child.name) ||
+              %w[strong b em i code a br span strike s del sub sup
+                 u].include?(child.name) ||
               (child.element? && contains_only_text_or_inline(child))
           end
         end
@@ -302,11 +276,11 @@ module Prosereflect
           list = OrderedList.new
 
           # Handle start attribute
-          start_val = (html_node['start'] || '1').to_i
+          start_val = (html_node["start"] || "1").to_i
           list.start = start_val
 
           # Process list items
-          html_node.css('> li').each do |li|
+          html_node.css("> li").each do |li|
             list.add_child(create_list_item_node(li))
           end
 
@@ -319,11 +293,11 @@ module Prosereflect
           list.bullet_style = nil
 
           # Handle style attribute if present
-          if html_node['style']&.include?('list-style-type')
-            style = case html_node['style']
-                    when /disc/ then 'disc'
-                    when /circle/ then 'circle'
-                    when /square/ then 'square'
+          if html_node["style"]&.include?("list-style-type")
+            style = case html_node["style"]
+                    when /disc/ then "disc"
+                    when /circle/ then "circle"
+                    when /square/ then "square"
                     end
             list.bullet_style = style
           end
@@ -337,7 +311,9 @@ module Prosereflect
           item = ListItem.new
 
           # Handle text content first
-          text_content = html_node.children.select { |child| child.text? || inline_element?(child) }
+          text_content = html_node.children.select do |child|
+            child.text? || inline_element?(child)
+          end
           if text_content.any?
             paragraph = Paragraph.new
             text_content.each do |child|
@@ -348,7 +324,9 @@ module Prosereflect
           end
 
           # Handle nested content
-          html_node.children.reject { |child| child.text? || inline_element?(child) }.each do |child|
+          html_node.children.reject do |child|
+            child.text? || inline_element?(child)
+          end.each do |child|
             node = convert_node(child)
             if node.is_a?(Array)
               node.each { |n| item.add_content(n) }
@@ -364,7 +342,8 @@ module Prosereflect
         def inline_element?(node)
           return false unless node.element?
 
-          %w[strong b em i code a br span strike s del sub sup u].include?(node.name)
+          %w[strong b em i code a br span strike s del sub sup
+             u].include?(node.name)
         end
 
         # Create a blockquote node from HTML blockquote
@@ -372,7 +351,7 @@ module Prosereflect
           quote = Blockquote.new
 
           # Handle cite attribute if present
-          quote.citation = html_node['cite'] if html_node['cite']
+          quote.citation = html_node["cite"] if html_node["cite"]
 
           # Process each child separately to maintain block structure
           html_node.children.each do |child|
@@ -401,8 +380,8 @@ module Prosereflect
           hr = HorizontalRule.new
 
           # Handle style attributes if present
-          if html_node['style']
-            style = html_node['style']
+          if html_node["style"]
+            style = html_node["style"]
 
             # Parse border-style
             hr.style = Regexp.last_match(1) if style =~ /border-style:\s*(solid|dashed|dotted)/
@@ -420,20 +399,20 @@ module Prosereflect
         # Create an image node from HTML img
         def create_image_node(html_node)
           # Skip images without src
-          return nil unless html_node['src']
+          return nil unless html_node["src"]
 
           image = Image.new
 
           # Handle required src attribute
-          image.src = html_node['src']
+          image.src = html_node["src"]
 
           # Handle optional attributes
-          image.alt = html_node['alt'] if html_node['alt']
-          image.title = html_node['title'] if html_node['title']
+          image.alt = html_node["alt"] if html_node["alt"]
+          image.title = html_node["title"] if html_node["title"]
 
           # Handle dimensions
-          width = html_node['width']&.to_i
-          height = html_node['height']&.to_i
+          width = html_node["width"]&.to_i
+          height = html_node["height"]&.to_i
           image.dimensions = [width, height] if width || height
 
           image
@@ -443,17 +422,17 @@ module Prosereflect
         def create_code_block_wrapper(html_node)
           wrapper = CodeBlockWrapper.new
           wrapper.attrs = {
-            'line_numbers' => false
+            "line_numbers" => false,
           }
 
-          code_node = html_node.at_css('code')
+          code_node = html_node.at_css("code")
           if code_node
             block = create_code_block(code_node)
             wrapper.add_child(block)
           end
 
-          wrapper.to_h['attrs'] = {
-            'line_numbers' => false
+          wrapper.to_h["attrs"] = {
+            "line_numbers" => false,
           }
           wrapper
         end
@@ -465,9 +444,9 @@ module Prosereflect
           language = extract_language(html_node)
 
           block.attrs = {
-            'content' => content,
-            'language' => language,
-            'line_numbers' => nil
+            "content" => content,
+            "language" => language,
+            "line_numbers" => nil,
           }
           block.content = content
 
@@ -475,9 +454,9 @@ module Prosereflect
         end
 
         def extract_language(html_node)
-          return nil unless html_node['class']
+          return nil unless html_node["class"]
 
-          return unless html_node['class'] =~ /language-(\w+)/
+          return unless html_node["class"] =~ /language-(\w+)/
 
           Regexp.last_match(1)
         end
@@ -493,10 +472,10 @@ module Prosereflect
         # Create a user mention node from HTML user-mention element
         def create_user_node(html_node)
           # Skip user mentions without data-id
-          return nil unless html_node['data-id']
+          return nil unless html_node["data-id"]
 
           user = User.new
-          user.id = html_node['data-id']
+          user.id = html_node["data-id"]
           user
         end
       end

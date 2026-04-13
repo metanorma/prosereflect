@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 # {
 #   type: "italic"
 # }
@@ -9,7 +7,7 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Italic < Base
-      PM_TYPE = 'italic'
+      PM_TYPE = "italic"
     end
   end
 end

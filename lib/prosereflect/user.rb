@@ -1,20 +1,20 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-
 module Prosereflect
   # User class represents a user mention in ProseMirror.
   class User < Node
-    PM_TYPE = 'user'
+    PM_TYPE = "user"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :id, :string
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'attrs', to: :attrs
-      map 'content', to: :content
+      map "type", to: :type, render_default: true
+      map "attrs", to: :attrs
+      map "content", to: :content
     end
 
     def initialize(attributes = {})
@@ -23,8 +23,8 @@ module Prosereflect
 
       return unless attributes[:attrs]
 
-      @id = attributes[:attrs]['id']
-      self.attrs = { 'id' => @id }
+      @id = attributes[:attrs]["id"]
+      self.attrs = { "id" => @id }
     end
 
     def self.create(attrs = nil)
@@ -35,16 +35,16 @@ module Prosereflect
     def id=(user_id)
       @id = user_id
       self.attrs ||= {}
-      attrs['id'] = user_id
+      attrs["id"] = user_id
     end
 
     def id
-      @id || attrs&.[]('id')
+      @id || attrs&.[]("id")
     end
 
     # Override content-related methods since user mentions don't have content
     def add_child(*)
-      raise NotImplementedError, 'User mention nodes cannot have children'
+      raise NotImplementedError, "User mention nodes cannot have children"
     end
 
     def content
@@ -53,10 +53,10 @@ module Prosereflect
 
     def to_h
       hash = super
-      hash['attrs'] = {
-        'id' => id
+      hash["attrs"] = {
+        "id" => id,
       }
-      hash['content'] = []
+      hash["content"] = []
       hash
     end
   end

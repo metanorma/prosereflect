@@ -1,21 +1,20 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'text'
-
 module Prosereflect
   class Heading < Node
-    PM_TYPE = 'heading'
+    PM_TYPE = "heading"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :level, :integer
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'content', to: :content
-      map 'attrs', to: :attrs
-      map 'marks', to: :marks
+      map "type", to: :type, render_default: true
+      map "content", to: :content
+      map "attrs", to: :attrs
+      map "marks", to: :marks
     end
 
     def initialize(params = {})
@@ -25,7 +24,7 @@ module Prosereflect
       # Extract level from attrs if provided
       return unless params[:attrs]
 
-      @level = params[:attrs]['level']
+      @level = params[:attrs]["level"]
     end
 
     def self.create(attrs = nil)
@@ -35,15 +34,15 @@ module Prosereflect
     def level=(value)
       @level = value
       self.attrs ||= {}
-      attrs['level'] = value
+      attrs["level"] = value
     end
 
     def level
-      @level || attrs&.[]('level')
+      @level || attrs&.[]("level")
     end
 
     def text_content
-      return '' unless content
+      return "" unless content
 
       content.map(&:text_content).join
     end
@@ -56,8 +55,8 @@ module Prosereflect
 
     def to_h
       result = super
-      result['attrs'] ||= {}
-      result['attrs']['level'] = level if level
+      result["attrs"] ||= {}
+      result["attrs"]["level"] = level if level
       result
     end
   end

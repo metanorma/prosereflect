@@ -1,27 +1,17 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'table'
-require_relative 'paragraph'
-require_relative 'image'
-require_relative 'bullet_list'
-require_relative 'ordered_list'
-require_relative 'blockquote'
-require_relative 'horizontal_rule'
-require_relative 'code_block_wrapper'
-require_relative 'heading'
-require_relative 'user'
-
 module Prosereflect
   # Document class represents a ProseMirror document.
   class Document < Node
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
-    PM_TYPE = 'doc'
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
+    PM_TYPE = "doc"
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'content', to: :content
-      map 'attrs', to: :attrs
+      map "type", to: :type, render_default: true
+      map "content", to: :content
+      map "attrs", to: :attrs
     end
 
     def self.create(attrs = nil)
@@ -33,12 +23,12 @@ module Prosereflect
       result = super
 
       # Handle array of attribute objects specially for serialization
-      if attrs.is_a?(Array) && attrs.all? { |attr| attr.is_a?(Prosereflect::Attribute::Base) }
+      if attrs.is_a?(Array) && attrs.all?(Prosereflect::Attribute::Base)
         attrs_hash = {}
         attrs.each do |attr|
           attrs_hash.merge!(attr.to_h)
         end
-        result['attrs'] = attrs_hash unless attrs_hash.empty?
+        result["attrs"] = attrs_hash unless attrs_hash.empty?
       end
 
       result
@@ -54,7 +44,7 @@ module Prosereflect
 
     # Add a heading to the document
     def add_heading(level)
-      heading = Heading.new(attrs: { 'level' => level })
+      heading = Heading.new(attrs: { "level" => level })
       add_child(heading)
       heading
     end
@@ -130,9 +120,11 @@ module Prosereflect
 
     # Get plain text content from all nodes
     def text_content
-      return '' unless content
+      return "" unless content
 
-      content.map { |node| node.respond_to?(:text_content) ? node.text_content : '' }.join("\n").strip
+      content.map do |node|
+        node.respond_to?(:text_content) ? node.text_content : ""
+      end.join("\n").strip
     end
   end
 end

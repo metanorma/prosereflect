@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 # {
 #   type: "link",
 #   attrs: {
@@ -12,7 +10,7 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Link < Base
-      PM_TYPE = 'link'
+      PM_TYPE = "link"
     end
   end
 end

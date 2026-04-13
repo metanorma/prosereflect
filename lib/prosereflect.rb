@@ -1,23 +1,33 @@
 # frozen_string_literal: true
 
-require_relative 'prosereflect/version'
-require_relative 'prosereflect/node'
-require_relative 'prosereflect/mark'
-require_relative 'prosereflect/attribute'
-require_relative 'prosereflect/text'
-require_relative 'prosereflect/paragraph'
-require_relative 'prosereflect/hard_break'
-require_relative 'prosereflect/table'
-require_relative 'prosereflect/table_row'
-require_relative 'prosereflect/table_cell'
-require_relative 'prosereflect/heading'
-require_relative 'prosereflect/document'
-require_relative 'prosereflect/parser'
-require_relative 'prosereflect/input/html'
-require_relative 'prosereflect/output/html'
-require_relative 'prosereflect/user'
+require "lutaml/model"
 
 module Prosereflect
   class Error < StandardError; end
-  # Your code goes here...
+
+  autoload :Attribute, "prosereflect/attribute"
+  autoload :Blockquote, "prosereflect/blockquote"
+  autoload :BulletList, "prosereflect/bullet_list"
+  autoload :CodeBlock, "prosereflect/code_block"
+  autoload :CodeBlockWrapper, "prosereflect/code_block_wrapper"
+  autoload :Document, "prosereflect/document"
+  autoload :HardBreak, "prosereflect/hard_break"
+  autoload :Heading, "prosereflect/heading"
+  autoload :HorizontalRule, "prosereflect/horizontal_rule"
+  autoload :Image, "prosereflect/image"
+  autoload :Input, "prosereflect/input"
+  autoload :ListItem, "prosereflect/list_item"
+  autoload :Mark, "prosereflect/mark"
+  autoload :Node, "prosereflect/node"
+  autoload :OrderedList, "prosereflect/ordered_list"
+  autoload :Output, "prosereflect/output"
+  autoload :Paragraph, "prosereflect/paragraph"
+  autoload :Parser, "prosereflect/parser"
+  autoload :Table, "prosereflect/table"
+  autoload :TableCell, "prosereflect/table_cell"
+  autoload :TableHeader, "prosereflect/table_header"
+  autoload :TableRow, "prosereflect/table_row"
+  autoload :Text, "prosereflect/text"
+  autoload :User, "prosereflect/user"
+  autoload :VERSION, "prosereflect/version"
 end

@@ -1,18 +1,17 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'table_cell'
-
 module Prosereflect
   class TableRow < Node
-    PM_TYPE = 'table_row'
+    PM_TYPE = "table_row"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'content', to: :content
-      map 'attrs', to: :attrs
+      map "type", to: :type, render_default: true
+      map "content", to: :content
+      map "attrs", to: :attrs
     end
 
     def initialize(opts = {})
@@ -44,10 +43,11 @@ module Prosereflect
     # Override to_h to handle empty content and attributes properly
     def to_h
       result = super
-      result['content'] ||= []
-      if result['attrs']
-        result['attrs'] = result['attrs'].is_a?(Hash) && result['attrs'][:attrs] ? result['attrs'][:attrs] : result['attrs']
-        result.delete('attrs') if result['attrs'].empty?
+      result["content"] ||= []
+      if result["attrs"]
+        result["attrs"] =
+          result["attrs"].is_a?(Hash) && result["attrs"][:attrs] ? result["attrs"][:attrs] : result["attrs"]
+        result.delete("attrs") if result["attrs"].empty?
       end
       result
     end

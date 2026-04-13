@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'yaml'
-require 'json'
+require "yaml"
+require "json"
 
 # Custom RSpec matcher for comparing JSON structures
 RSpec::Matchers.define :be_equivalent_json do |expected|
@@ -64,7 +64,7 @@ RSpec::Matchers.define :have_equivalent_structure do |expected|
     # Parse strings if needed
     expected_data = case expected
                     when String
-                      if expected.strip.start_with?('{', '[')
+                      if expected.strip.start_with?("{", "[")
                         begin
                           JSON.parse(expected)
                         rescue StandardError
@@ -79,7 +79,7 @@ RSpec::Matchers.define :have_equivalent_structure do |expected|
 
     actual_data = case actual
                   when String
-                    if actual.strip.start_with?('{', '[')
+                    if actual.strip.start_with?("{", "[")
                       begin
                         JSON.parse(actual)
                       rescue StandardError
@@ -98,7 +98,7 @@ RSpec::Matchers.define :have_equivalent_structure do |expected|
   failure_message do |actual|
     expected_data = case expected
                     when String
-                      if expected.strip.start_with?('{', '[')
+                      if expected.strip.start_with?("{", "[")
                         begin
                           JSON.parse(expected)
                         rescue StandardError
@@ -113,7 +113,7 @@ RSpec::Matchers.define :have_equivalent_structure do |expected|
 
     actual_data = case actual
                   when String
-                    if actual.strip.start_with?('{', '[')
+                    if actual.strip.start_with?("{", "[")
                       begin
                         JSON.parse(actual)
                       rescue StandardError

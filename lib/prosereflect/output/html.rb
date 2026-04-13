@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require 'nokogiri'
-require_relative '../document'
+require "nokogiri"
 
 module Prosereflect
   module Output
@@ -16,7 +15,7 @@ module Prosereflect
           end
 
           doc = Nokogiri::HTML(builder.to_html)
-          html = doc.at_css('div').children.to_html
+          html = doc.at_css("div").children.to_html
 
           code_blocks = {}
           html.scan(%r{<code[^>]*>(.*?)</code>}m).each_with_index do |match, i|
@@ -27,7 +26,7 @@ module Prosereflect
           end
 
           # Remove newlines and spaces
-          html = html.gsub(/\n\s*/, '')
+          html = html.gsub(/\n\s*/, "")
 
           code_blocks.each do |placeholder, content|
             html.sub!(placeholder, content)
@@ -43,41 +42,41 @@ module Prosereflect
           return unless node
 
           case node.type
-          when 'doc'
+          when "doc"
             process_document(node, builder)
-          when 'paragraph'
+          when "paragraph"
             process_paragraph(node, builder)
-          when 'heading'
+          when "heading"
             process_heading(node, builder)
-          when 'text'
+          when "text"
             process_text(node, builder)
-          when 'table'
+          when "table"
             process_table(node, builder)
-          when 'table_row'
+          when "table_row"
             process_table_row(node, builder)
-          when 'table_cell'
+          when "table_cell"
             process_table_cell(node, builder)
-          when 'table_header'
+          when "table_header"
             process_table_header(node, builder)
-          when 'hard_break'
+          when "hard_break"
             builder.br
-          when 'image'
+          when "image"
             process_image(node, builder)
-          when 'user'
+          when "user"
             process_user(node, builder)
-          when 'bullet_list'
+          when "bullet_list"
             process_bullet_list(node, builder)
-          when 'ordered_list'
+          when "ordered_list"
             process_ordered_list(node, builder)
-          when 'list_item'
+          when "list_item"
             process_list_item(node, builder)
-          when 'blockquote'
+          when "blockquote"
             process_blockquote(node, builder)
-          when 'horizontal_rule'
+          when "horizontal_rule"
             process_horizontal_rule(node, builder)
-          when 'code_block_wrapper'
+          when "code_block_wrapper"
             process_code_block_wrapper(node, builder)
-          when 'code_block'
+          when "code_block"
             process_code_block(node, builder)
           else
             # Default handling for unknown nodes - treat as a container
@@ -124,27 +123,27 @@ module Prosereflect
           remaining_marks = marks[1..]
 
           mark_type = if current_mark.is_a?(Hash)
-                        current_mark['type']
+                        current_mark["type"]
                       elsif current_mark.respond_to?(:type)
                         current_mark.type
                       else
-                        'unknown'
+                        "unknown"
                       end
 
           case mark_type
-          when 'bold'
+          when "bold"
             builder.strong do
               apply_marks(text, remaining_marks, builder)
             end
-          when 'italic'
+          when "italic"
             builder.em do
               apply_marks(text, remaining_marks, builder)
             end
-          when 'code'
+          when "code"
             builder.code do
               apply_marks(text, remaining_marks, builder)
             end
-          when 'link'
+          when "link"
             href = find_href_attribute(current_mark)
             if href
               builder.a(href: href) do
@@ -153,19 +152,19 @@ module Prosereflect
             else
               apply_marks(text, remaining_marks, builder)
             end
-          when 'strike'
+          when "strike"
             builder.del do
               apply_marks(text, remaining_marks, builder)
             end
-          when 'underline'
+          when "underline"
             builder.u do
               apply_marks(text, remaining_marks, builder)
             end
-          when 'subscript'
+          when "subscript"
             builder.sub do
               apply_marks(text, remaining_marks, builder)
             end
-          when 'superscript'
+          when "superscript"
             builder.sup do
               apply_marks(text, remaining_marks, builder)
             end
@@ -178,23 +177,23 @@ module Prosereflect
         # Find href attribute in a link mark
         def find_href_attribute(mark)
           if mark.is_a?(Hash)
-            if mark['attrs'].is_a?(Hash)
-              return mark['attrs']['href']
-            elsif mark['attrs'].is_a?(Array)
-              href_attr = mark['attrs'].find { |a| a.is_a?(Prosereflect::Attribute::Href) || (a.is_a?(Hash) && a['type'] == 'href') }
-              return href_attr['href'] if href_attr.is_a?(Hash) && href_attr['href']
+            if mark["attrs"].is_a?(Hash)
+              return mark["attrs"]["href"]
+            elsif mark["attrs"].is_a?(Array)
+              href_attr = mark["attrs"].find { |a| a.is_a?(Prosereflect::Attribute::Href) || (a.is_a?(Hash) && a["type"] == "href") }
+              return href_attr["href"] if href_attr.is_a?(Hash) && href_attr["href"]
               return href_attr.href if href_attr.respond_to?(:href)
             end
           elsif mark.respond_to?(:attrs)
             attrs = mark.attrs
             if attrs.is_a?(Hash)
-              return attrs['href']
+              return attrs["href"]
             elsif attrs.is_a?(Array)
               href_attr = attrs.find { |attr| attr.is_a?(Prosereflect::Attribute::Href) }
               return href_attr&.href if href_attr
 
-              hash_attr = attrs.find { |attr| attr.is_a?(Hash) && attr['href'] }
-              return hash_attr['href'] if hash_attr
+              hash_attr = attrs.find { |attr| attr.is_a?(Hash) && attr["href"] }
+              return hash_attr["href"] if hash_attr
             end
           end
           nil
@@ -206,7 +205,9 @@ module Prosereflect
             rows = node.rows || node.content
             return if rows.empty?
 
-            has_header = rows.first&.content&.any? { |cell| cell.type == 'table_header' }
+            has_header = rows.first&.content&.any? do |cell|
+              cell.type == "table_header"
+            end
 
             if has_header
               builder.thead do
@@ -233,7 +234,7 @@ module Prosereflect
         # Process a table cell
         def process_table_cell(node, builder)
           builder.td do
-            if node.content&.size == 1 && node.content.first.type == 'paragraph'
+            if node.content&.size == 1 && node.content.first.type == "paragraph"
               node.content.first.content&.each do |child|
                 process_node(child, builder)
               end
@@ -251,7 +252,7 @@ module Prosereflect
           attrs[:colspan] = node.colspan if node.colspan
 
           builder.th(attrs) do
-            if node.content&.size == 1 && node.content.first.type == 'paragraph'
+            if node.content&.size == 1 && node.content.first.type == "paragraph"
               node.content.first.content&.each do |child|
                 process_node(child, builder)
               end
@@ -265,7 +266,7 @@ module Prosereflect
         def process_image(node, builder)
           attrs = {
             src: node.src,
-            alt: node.alt
+            alt: node.alt,
           }
           attrs[:title] = node.title if node.title
           attrs[:width] = node.width if node.width
@@ -283,7 +284,7 @@ module Prosereflect
         def process_bullet_list(node, builder)
           builder.ul do
             node.content&.each do |child|
-              if child.type == 'list_item'
+              if child.type == "list_item"
                 process_node(child, builder)
               else
                 builder.li do
@@ -330,7 +331,7 @@ module Prosereflect
           attrs[:style] << "border-style: #{node.style}" if node.style
           attrs[:style] << "width: #{node.width}" if node.width
           attrs[:style] << "border-width: #{node.thickness}px" if node.thickness
-          attrs[:style] = attrs[:style].join('; ') unless attrs[:style].empty?
+          attrs[:style] = attrs[:style].join("; ") unless attrs[:style].empty?
 
           builder.hr(attrs)
         end
@@ -339,9 +340,10 @@ module Prosereflect
         def process_code_block_wrapper(node, builder)
           attrs = {}
           if node.attrs
-            attrs['data-line-numbers'] = 'true' if node.attrs['line_numbers']
-            if node.attrs['highlight_lines'].is_a?(Array) && !node.attrs['highlight_lines'].empty? && node.attrs['highlight_lines'] != [0]
-              attrs['data-highlight-lines'] = node.attrs['highlight_lines'].join(',')
+            attrs["data-line-numbers"] = "true" if node.attrs["line_numbers"]
+            if node.attrs["highlight_lines"].is_a?(Array) && !node.attrs["highlight_lines"].empty? && node.attrs["highlight_lines"] != [0]
+              attrs["data-highlight-lines"] =
+                node.attrs["highlight_lines"].join(",")
             end
           end
 
@@ -353,7 +355,7 @@ module Prosereflect
         # Process a code block node
         def process_code_block(node, builder)
           attrs = {}
-          attrs['class'] = "language-#{node.language}" if node.language
+          attrs["class"] = "language-#{node.language}" if node.language
 
           builder.code(attrs) do
             builder.text node.content

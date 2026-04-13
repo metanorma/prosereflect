@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 module Prosereflect
   module Attribute
     class Bold < Base
-      PM_TYPE = 'bold'
+      PM_TYPE = "bold"
 
       def initialize(options = {})
         super
-        self.type = 'bold'
+        self.type = "bold"
       end
 
       def attrs

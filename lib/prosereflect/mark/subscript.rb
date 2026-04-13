@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 # {
 #   type: "subscript"
 # }
@@ -9,7 +7,7 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Subscript < Base
-      PM_TYPE = 'subscript'
+      PM_TYPE = "subscript"
     end
   end
 end

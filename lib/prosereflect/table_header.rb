@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
-require_relative 'table_cell'
-
 module Prosereflect
   # TableHeader class represents a header cell in a table (<th> tag).
   # It inherits from TableCell but adds header-specific attributes.
   class TableHeader < TableCell
-    PM_TYPE = 'table_header'
+    PM_TYPE = "table_header"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :scope, :string  # row, col, rowgroup, or colgroup
     attribute :abbr, :string   # abbreviated version of content
     attribute :colspan, :integer # number of columns this header spans
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'content', to: :content
-      map 'attrs', to: :attrs
+      map "type", to: :type, render_default: true
+      map "content", to: :content
+      map "attrs", to: :attrs
     end
 
     def initialize(attributes = {})
@@ -41,21 +41,21 @@ module Prosereflect
       return unless %w[row col rowgroup colgroup].include?(scope_value)
 
       self.attrs ||= {}
-      attrs['scope'] = scope_value
+      attrs["scope"] = scope_value
     end
 
     def scope
-      attrs&.[]('scope')
+      attrs&.[]("scope")
     end
 
     # Set abbreviated version of the header content
     def abbr=(abbr_text)
       self.attrs ||= {}
-      attrs['abbr'] = abbr_text
+      attrs["abbr"] = abbr_text
     end
 
     def abbr
-      attrs&.[]('abbr')
+      attrs&.[]("abbr")
     end
 
     # Set the number of columns this header spans
@@ -63,11 +63,11 @@ module Prosereflect
       return unless span.to_i.positive?
 
       self.attrs ||= {}
-      attrs['colspan'] = span.to_i
+      attrs["colspan"] = span.to_i
     end
 
     def colspan
-      attrs&.[]('colspan')
+      attrs&.[]("colspan")
     end
 
     # Get header attributes as a hash
@@ -75,16 +75,16 @@ module Prosereflect
       {
         scope: scope,
         abbr: abbr,
-        colspan: colspan
+        colspan: colspan,
       }.compact
     end
 
     # Override to_h to exclude nil attributes
     def to_h
       result = super
-      if result['attrs']
-        result['attrs'].reject! { |_, v| v.nil? }
-        result.delete('attrs') if result['attrs'].empty?
+      if result["attrs"]
+        result["attrs"].compact!
+        result.delete("attrs") if result["attrs"].empty?
       end
       result
     end
