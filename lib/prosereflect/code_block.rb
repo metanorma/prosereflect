@@ -1,27 +1,27 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-
 module Prosereflect
   # CodeBlock class represents a code block in ProseMirror.
   class CodeBlock < Node
-    PM_TYPE = 'code_block'
+    PM_TYPE = "code_block"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :language, :string
     attribute :line_numbers, :boolean
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'attrs', to: :attrs
-      map 'content', to: :content
+      map "type", to: :type, render_default: true
+      map "attrs", to: :attrs
+      map "content", to: :content
     end
 
     def initialize(attributes = {})
       attributes[:attrs] ||= {
-        'content' => nil,
-        'language' => nil
+        "content" => nil,
+        "language" => nil,
       }
       super
     end
@@ -33,38 +33,38 @@ module Prosereflect
     def language=(value)
       @language = value
       self.attrs ||= {}
-      attrs['language'] = value
+      attrs["language"] = value
     end
 
     def language
-      @language || attrs&.[]('language')
+      @language || attrs&.[]("language")
     end
 
     def line_numbers=(value)
       @line_numbers = value
       self.attrs ||= {}
-      attrs['line_numbers'] = value
+      attrs["line_numbers"] = value
     end
 
     def line_numbers
-      @line_numbers || attrs&.[]('line_numbers') || false
+      @line_numbers || attrs&.[]("line_numbers") || false
     end
 
     def content=(value)
       @content = value
       self.attrs ||= {}
-      attrs['content'] = value
+      attrs["content"] = value
     end
 
     def content
-      @content || attrs&.[]('content')
+      @content || attrs&.[]("content")
     end
 
     attr_reader :highlight_lines_str
 
     def highlight_lines=(lines)
       @highlight_lines_str = if lines.is_a?(Array)
-                               lines.join(',')
+                               lines.join(",")
                              else
                                lines.to_s
                              end
@@ -73,7 +73,7 @@ module Prosereflect
     def highlight_lines
       return [] unless @highlight_lines_str
 
-      @highlight_lines_str.split(',').map(&:to_i)
+      @highlight_lines_str.split(",").map(&:to_i)
     end
 
     def text_content
@@ -82,12 +82,12 @@ module Prosereflect
 
     def to_h
       hash = super
-      hash['attrs'] = {
-        'content' => content,
-        'language' => language
+      hash["attrs"] = {
+        "content" => content,
+        "language" => language,
       }
-      hash['attrs']['line_numbers'] = line_numbers if line_numbers
-      hash.delete('content')
+      hash["attrs"]["line_numbers"] = line_numbers if line_numbers
+      hash.delete("content")
       hash
     end
 
@@ -96,7 +96,7 @@ module Prosereflect
       {
         language: language,
         line_numbers: line_numbers,
-        highlight_lines: highlight_lines
+        highlight_lines: highlight_lines,
       }.compact
     end
 
@@ -118,14 +118,14 @@ module Prosereflect
       return content if lines.empty?
 
       min_indent = lines.reject(&:empty?)
-                        .map { |line| line[/^\s*/].length }
-                        .min || 0
+        .map { |line| line[/^\s*/].length }
+        .min || 0
 
       normalized_lines = lines.map do |line|
         if line.empty?
           line
         else
-          line[min_indent..] || ''
+          line[min_indent..] || ""
         end
       end
 

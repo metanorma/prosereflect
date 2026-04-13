@@ -1,27 +1,26 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'code_block'
-
 module Prosereflect
   # CodeBlockWrapper class represents a pre tag that wraps code blocks in ProseMirror.
   class CodeBlockWrapper < Node
-    PM_TYPE = 'code_block_wrapper'
+    PM_TYPE = "code_block_wrapper"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :line_numbers, :boolean
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'attrs', to: :attrs
-      map 'content', to: :content
+      map "type", to: :type, render_default: true
+      map "attrs", to: :attrs
+      map "content", to: :content
     end
 
     def initialize(attributes = {})
       attributes[:content] ||= []
       attributes[:attrs] = {
-        'line_numbers' => false
+        "line_numbers" => false,
       }
       super
     end
@@ -33,11 +32,11 @@ module Prosereflect
     def line_numbers=(value)
       @line_numbers = value
       self.attrs ||= {}
-      attrs['line_numbers'] = value
+      attrs["line_numbers"] = value
     end
 
     def line_numbers
-      @line_numbers || attrs&.[]('line_numbers') || false
+      @line_numbers || attrs&.[]("line_numbers") || false
     end
 
     def add_code_block(code = nil)
@@ -57,8 +56,8 @@ module Prosereflect
 
     def to_h
       hash = super
-      hash['attrs'] = {
-        'line_numbers' => line_numbers
+      hash["attrs"] = {
+        "line_numbers" => line_numbers,
       }
       hash
     end

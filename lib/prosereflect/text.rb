@@ -1,32 +1,32 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-
 module Prosereflect
   class Text < Node
-    PM_TYPE = 'text'
+    PM_TYPE = "text"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
-    attribute :text, :string, default: ''
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
+    attribute :text, :string, default: ""
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'text', to: :text
-      map 'marks', to: :marks
+      map "type", to: :type, render_default: true
+      map "text", to: :text
+      map "marks", to: :marks
     end
 
-    def self.create(text = '', marks = nil)
+    def self.create(text = "", marks = nil)
       new(text: text, marks: marks)
     end
 
     def text_content
-      text || ''
+      text || ""
     end
 
     # Override the to_h method to include the text attribute
     def to_h
       result = super
-      result['text'] = text
+      result["text"] = text
       result
     end
   end

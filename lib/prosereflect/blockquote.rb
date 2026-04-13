@@ -1,21 +1,20 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'paragraph'
-
 module Prosereflect
   # It can contain other block-level content like paragraphs, lists, etc.
   class Blockquote < Node
-    PM_TYPE = 'blockquote'
+    PM_TYPE = "blockquote"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :citation, :string
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'content', to: :content
-      map 'attrs', to: :attrs
+      map "type", to: :type, render_default: true
+      map "content", to: :content
+      map "attrs", to: :attrs
     end
 
     def initialize(attributes = {})
@@ -56,12 +55,12 @@ module Prosereflect
     # Update citation/source for the blockquote
     def citation=(source)
       self.attrs ||= {}
-      attrs['citation'] = source
+      attrs["citation"] = source
     end
 
     # Get citation/source of the blockquote
     def citation
-      attrs&.[]('citation')
+      attrs&.[]("citation")
     end
 
     # Check if blockquote has a citation
@@ -72,7 +71,7 @@ module Prosereflect
     # Remove citation
     def remove_citation
       self.attrs ||= {}
-      attrs.delete('citation')
+      attrs.delete("citation")
     end
 
     def add_paragraph(text)

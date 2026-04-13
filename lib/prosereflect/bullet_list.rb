@@ -1,26 +1,25 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'list_item'
-
 module Prosereflect
   # BulletList class represents an unordered list in ProseMirror.
   class BulletList < Node
-    PM_TYPE = 'bullet_list'
+    PM_TYPE = "bullet_list"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :bullet_style, :string
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'attrs', to: :attrs
-      map 'content', to: :content
+      map "type", to: :type, render_default: true
+      map "attrs", to: :attrs
+      map "content", to: :content
     end
 
     def initialize(attributes = {})
       attributes[:content] ||= []
-      attributes[:attrs] ||= { 'bullet_style' => nil }
+      attributes[:attrs] ||= { "bullet_style" => nil }
       super
     end
 
@@ -31,11 +30,11 @@ module Prosereflect
     def bullet_style=(value)
       @bullet_style = value
       self.attrs ||= {}
-      attrs['bullet_style'] = value
+      attrs["bullet_style"] = value
     end
 
     def bullet_style
-      @bullet_style || attrs&.[]('bullet_style')
+      @bullet_style || attrs&.[]("bullet_style")
     end
 
     def add_item(text)
@@ -67,16 +66,18 @@ module Prosereflect
 
     # Get text content with proper formatting
     def text_content
-      return '' unless content
+      return "" unless content
 
-      content.map { |item| item.respond_to?(:text_content) ? item.text_content : '' }.join("\n")
+      content.map do |item|
+        item.respond_to?(:text_content) ? item.text_content : ""
+      end.join("\n")
     end
 
     # Override to_h to exclude empty attrs
     def to_h
       hash = super
-      hash['attrs'] ||= {}
-      hash['attrs']['bullet_style'] = bullet_style
+      hash["attrs"] ||= {}
+      hash["attrs"]["bullet_style"] = bullet_style
       hash
     end
   end

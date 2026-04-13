@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-require_relative 'attribute'
-require_relative 'mark'
-
 module Prosereflect
   class Node < Lutaml::Model::Serializable
-    PM_TYPE = 'node'
+    PM_TYPE = "node"
 
     attribute :type, :string
     attribute :attrs, :hash
@@ -14,10 +10,10 @@ module Prosereflect
     attribute :content, Node, polymorphic: true, collection: true
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'attrs', to: :attrs
-      map 'marks', to: :marks
-      map 'content', to: :content
+      map "type", to: :type, render_default: true
+      map "attrs", to: :attrs
+      map "marks", to: :marks
+      map "content", to: :content
     end
 
     def initialize(data = nil, attrs = nil)
@@ -25,18 +21,18 @@ module Prosereflect
         super(type: data, attrs: attrs, content: [])
       elsif data.is_a?(Hash)
         # Handle marks in a special way to preserve expected behavior in tests
-        if data[:marks] || data['marks']
-          marks_data = data[:marks] || data['marks']
+        if data[:marks] || data["marks"]
+          marks_data = data[:marks] || data["marks"]
           data = data.dup
-          data.delete('marks')
+          data.delete("marks")
           data.delete(:marks)
           super(data)
           self.marks = marks_data
         else
           # Handle attrs properly
-          if data[:attrs] || data['attrs']
+          if data[:attrs] || data["attrs"]
             data = data.dup
-            data[:attrs] = process_attrs_data(data[:attrs] || data['attrs'])
+            data[:attrs] = process_attrs_data(data[:attrs] || data["attrs"])
           end
           super(data)
         end
@@ -56,33 +52,35 @@ module Prosereflect
     def self.create(type = nil, attrs = nil)
       new(type || self::PM_TYPE, attrs)
     rescue NameError
-      new(type || 'node', attrs)
+      new(type || "node", attrs)
     end
 
     # Convert to hash for serialization
     def to_h
-      result = { 'type' => type }
+      result = { "type" => type }
 
       if attrs && !attrs.empty?
         if attrs.is_a?(Hash)
-          result['attrs'] = process_node_attributes(attrs, type)
-        elsif attrs.is_a?(Array) && attrs.all? { |attr| attr.respond_to?(:to_h) }
+          result["attrs"] = process_node_attributes(attrs, type)
+        elsif attrs.is_a?(Array) && attrs.all? do |attr|
+          attr.respond_to?(:to_h)
+        end
           # Convert array of attribute objects to a hash
           attrs_array = attrs.map do |attr|
             attr.is_a?(Prosereflect::Attribute::Base) ? attr.to_h : attr
           end
-          result['attrs'] = attrs_array unless attrs_array.empty?
+          result["attrs"] = attrs_array unless attrs_array.empty?
         end
       end
 
       if marks && !marks.empty?
-        result['marks'] = marks.map do |mark|
+        result["marks"] = marks.map do |mark|
           if mark.is_a?(Hash)
             mark
           elsif mark.respond_to?(:to_h)
             mark.to_h
           elsif mark.respond_to?(:type)
-            { 'type' => mark.type.to_s }
+            { "type" => mark.type.to_s }
           else
             raise ArgumentError, "Invalid mark type: #{mark.class}"
           end
@@ -90,8 +88,10 @@ module Prosereflect
       end
 
       if content && !content.empty?
-        result['content'] = if content.is_a?(Array)
-                              content.map { |item| item.respond_to?(:to_h) ? item.to_h : item }
+        result["content"] = if content.is_a?(Array)
+                              content.map do |item|
+                                item.respond_to?(:to_h) ? item.to_h : item
+                              end
                             else
                               [content]
                             end
@@ -112,7 +112,7 @@ module Prosereflect
         elsif mark.respond_to?(:to_h)
           mark.to_h
         elsif mark.respond_to?(:type)
-          { 'type' => mark.type.to_s }
+          { "type" => mark.type.to_s }
         else
           raise ArgumentError, "Invalid mark type: #{mark.class}"
         end
@@ -131,8 +131,8 @@ module Prosereflect
       elsif value.is_a?(Array)
         @marks = value.map do |v|
           if v.is_a?(Hash)
-            type = v['type'] || v[:type]
-            attrs = v['attrs'] || v[:attrs]
+            type = v["type"] || v[:type]
+            attrs = v["attrs"] || v[:attrs]
             begin
               mark_class = Prosereflect::Mark.const_get(type.to_s.capitalize)
               mark_class.new(attrs: attrs)
@@ -197,11 +197,11 @@ module Prosereflect
     def find_children(node_type)
       return [] unless content
 
-      content.select { |child| child.is_a?(node_type) }
+      content.grep(node_type)
     end
 
     def text_content
-      return '' unless content
+      return "" unless content
 
       content.map(&:text_content).join
     end
@@ -214,9 +214,9 @@ module Prosereflect
     private
 
     def process_node_attributes(attrs, node_type)
-      if attrs['attrs'].is_a?(Hash)
-        attrs['attrs']
-      elsif node_type == 'bullet_list' && attrs['bullet_style'].nil?
+      if attrs["attrs"].is_a?(Hash)
+        attrs["attrs"]
+      elsif node_type == "bullet_list" && attrs["bullet_style"].nil?
         nil
       else
         attrs

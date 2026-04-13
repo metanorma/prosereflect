@@ -1,22 +1,19 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'paragraph'
-require_relative 'text'
-require_relative 'hard_break'
-
 module Prosereflect
   # ListItem class represents a list item in ProseMirror.
   class ListItem < Node
-    PM_TYPE = 'list_item'
+    PM_TYPE = "list_item"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
     attribute :attrs, :hash
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'attrs', to: :attrs
-      map 'content', to: :content
+      map "type", to: :type, render_default: true
+      map "attrs", to: :attrs
+      map "content", to: :content
     end
 
     def initialize(attributes = {})
@@ -57,9 +54,11 @@ module Prosereflect
 
     # Get plain text content from all nodes
     def text_content
-      return '' unless content
+      return "" unless content
 
-      content.map { |node| node.respond_to?(:text_content) ? node.text_content : '' }.join("\n").strip
+      content.map do |node|
+        node.respond_to?(:text_content) ? node.text_content : ""
+      end.join("\n").strip
     end
   end
 end

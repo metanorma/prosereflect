@@ -1,20 +1,18 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'text'
-require_relative 'hard_break'
-
 module Prosereflect
   class Paragraph < Node
-    PM_TYPE = 'paragraph'
+    PM_TYPE = "paragraph"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'content', to: :content
-      map 'attrs', to: :attrs
-      map 'marks', to: :marks
+      map "type", to: :type, render_default: true
+      map "content", to: :content
+      map "attrs", to: :attrs
+      map "marks", to: :marks
     end
 
     def initialize(params = {})
@@ -29,13 +27,13 @@ module Prosereflect
     def text_nodes
       return [] unless content
 
-      content.select { |node| node.is_a?(Text) }
+      content.grep(Text)
     end
 
     def text_content
-      return '' unless content
+      return "" unless content
 
-      result = ''
+      result = ""
       content.each do |node|
         result += node.text_content
       end

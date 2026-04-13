@@ -1,22 +1,20 @@
 # frozen_string_literal: true
 
-require_relative 'node'
-require_relative 'table_row'
-require_relative 'table_header'
-
 module Prosereflect
   # TODO: support for table attributes
   # Table class represents a ProseMirror table.
   # It contains rows, each of which can contain cells.
   class Table < Node
-    PM_TYPE = 'table'
+    PM_TYPE = "table"
 
-    attribute :type, :string, default: -> { send('const_get', 'PM_TYPE') }
+    attribute :type, :string, default: -> {
+      self.class.send(:const_get, "PM_TYPE")
+    }
 
     key_value do
-      map 'type', to: :type, render_default: true
-      map 'content', to: :content
-      map 'attrs', to: :attrs
+      map "type", to: :type, render_default: true
+      map "content", to: :content
+      map "attrs", to: :attrs
     end
 
     def initialize(attributes = {})
@@ -84,10 +82,11 @@ module Prosereflect
     # Override to_h to handle empty content and attributes properly
     def to_h
       result = super
-      result['content'] ||= []
-      if result['attrs']
-        result['attrs'] = result['attrs'].is_a?(Hash) && result['attrs'][:attrs] ? result['attrs'][:attrs] : result['attrs']
-        result.delete('attrs') if result['attrs'].empty?
+      result["content"] ||= []
+      if result["attrs"]
+        result["attrs"] =
+          result["attrs"].is_a?(Hash) && result["attrs"][:attrs] ? result["attrs"][:attrs] : result["attrs"]
+        result.delete("attrs") if result["attrs"].empty?
       end
       result
     end

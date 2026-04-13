@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 # {
 #   type: "bold"
 # }
@@ -9,7 +7,7 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Bold < Base
-      PM_TYPE = 'bold'
+      PM_TYPE = "bold"
     end
   end
 end

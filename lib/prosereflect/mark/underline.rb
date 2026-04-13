@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 # {
 #   type: "underline"
 # }
@@ -9,7 +7,7 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Underline < Base
-      PM_TYPE = 'underline'
+      PM_TYPE = "underline"
     end
   end
 end

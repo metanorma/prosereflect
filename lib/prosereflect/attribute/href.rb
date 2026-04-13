@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 module Prosereflect
   module Attribute
     class Href < Base
-      PM_TYPE = 'href'
+      PM_TYPE = "href"
 
       attribute :type, :string, default: -> { PM_TYPE }
       attribute :href, :string

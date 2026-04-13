@@ -1,13 +1,10 @@
 # frozen_string_literal: true
 
-require 'lutaml/model'
-
 module Prosereflect
   module Attribute
+    autoload :Base, "#{__dir__}/attribute/base"
+    autoload :Href, "#{__dir__}/attribute/href"
+    autoload :Id, "#{__dir__}/attribute/id"
+    autoload :Bold, "#{__dir__}/attribute/bold"
   end
 end
-
-require_relative 'attribute/base'
-require_relative 'attribute/href'
-require_relative 'attribute/id'
-require_relative 'attribute/bold'

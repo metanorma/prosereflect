@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'base'
-
 # {
 #   type: "strike"
 # }
@@ -9,7 +7,7 @@ require_relative 'base'
 module Prosereflect
   module Mark
     class Strike < Base
-      PM_TYPE = 'strike'
+      PM_TYPE = "strike"
     end
   end
 end
