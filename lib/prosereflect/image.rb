@@ -94,6 +94,15 @@ module Prosereflect
       }.compact
     end
 
+    def to_h
+      hash = super
+      if hash["attrs"]
+        %w[title width height].each { |k| hash["attrs"].delete(k) if hash["attrs"][k].nil? }
+        hash.delete("attrs") if hash["attrs"].empty?
+      end
+      hash
+    end
+
     # Override content-related methods since images don't have content
     def add_child(*)
       raise NotImplementedError, "Image nodes cannot have children"

@@ -19,22 +19,24 @@ module Prosereflect
 
     def initialize(attributes = {})
       attributes[:content] ||= []
-      attributes[:attrs] ||= { "bullet_style" => nil }
+      # Only apply default if attrs key is completely absent
+      unless attributes.key?(:attrs) || attributes.key?("attrs")
+        attributes[:attrs] = { "bullet_style" => nil }
+      end
       super
     end
 
-    def self.create(attrs = nil)
-      new(attrs: attrs)
-    end
-
-    def bullet_style=(value)
-      @bullet_style = value
-      self.attrs ||= {}
-      attrs["bullet_style"] = value
-    end
-
-    def bullet_style
-      @bullet_style || attrs&.[]("bullet_style")
+    # Use *args to distinguish between create (no args) and create(nil)
+    # create with no args -> defaults applied
+    # create(nil) from parser -> no defaults, attrs explicitly nil
+    def self.create(*args)
+      if args.empty?
+        # No attrs provided - let initialize apply defaults
+        new(type: PM_TYPE)
+      else
+        attrs = args[0]
+        new({ type: PM_TYPE, attrs: attrs })
+      end
     end
 
     def add_item(text)
@@ -73,12 +75,16 @@ module Prosereflect
       end.join("\n")
     end
 
-    # Override to_h to exclude empty attrs
-    def to_h
-      hash = super
-      hash["attrs"] ||= {}
-      hash["attrs"]["bullet_style"] = bullet_style
-      hash
+    def bullet_style=(value)
+      @bullet_style = value
+      return if value.nil?
+
+      self.attrs ||= {}
+      attrs["bullet_style"] = value
+    end
+
+    def bullet_style
+      @bullet_style || attrs&.[]("bullet_style")
     end
   end
 end

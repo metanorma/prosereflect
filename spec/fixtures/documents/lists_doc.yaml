@@ -1,0 +1,32 @@
+type: doc
+content:
+  - type: bullet_list
+    content:
+      - type: list_item
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: Bullet 1
+      - type: list_item
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: Bullet 2
+  - type: ordered_list
+    attrs:
+      order: 1
+    content:
+      - type: list_item
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: Item 1
+      - type: list_item
+        content:
+          - type: paragraph
+            content:
+              - type: text
+                text: Item 2

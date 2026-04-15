@@ -1,0 +1,109 @@
+---
+layout: default
+title: Serialization
+parent: Guides
+nav_order: 3
+---
+= Serialization
+
+prosereflect supports round-trip serialization through ProseMirror's JSON/YAML format using the `to_h` / `Parser.parse_document` methods.
+
+== to_h (Serialize)
+
+Every node can be serialized to a Ruby hash matching ProseMirror's JSON format:
+
+[source,ruby]
+----
+doc = Prosereflect::Document.create
+para = doc.add_paragraph("Hello")
+para.add_text(" bold", [Prosereflect::Mark::Bold.new])
+
+hash = doc.to_h
+# => {
+#   "type" => "doc",
+#   "content" => [
+#     {
+#       "type" => "paragraph",
+#       "content" => [
+#         { "type" => "text", "text" => "Hello" },
+#         { "type" => "text", "text" => " bold", "marks" => [{"type" => "bold"}] }
+#       ]
+#     }
+#   ]
+# }
+----
+
+== parse_document (Deserialize)
+
+Convert a ProseMirror hash back to node objects:
+
+[source,ruby]
+----
+doc = Prosereflect::Parser.parse_document(hash)
+doc.paragraphs.first.text_content  # => "Hello bold"
+----
+
+Works with YAML and JSON strings too:
+
+[source,ruby]
+----
+# From YAML
+doc = Prosereflect::Parser.parse_document(YAML.safe_load(yaml_string))
+
+# From JSON
+doc = Prosereflect::Parser.parse_document(JSON.parse(json_string))
+----
+
+== YAML Round-Trip
+
+[source,ruby]
+----
+# Serialize to YAML
+yaml = doc.to_yaml
+
+# Deserialize from YAML
+data = YAML.safe_load(yaml)
+doc = Prosereflect::Parser.parse_document(data)
+
+# Verify round-trip
+doc.to_h == original_doc.to_h  # => true
+----
+
+== JSON Round-Trip
+
+[source,ruby]
+----
+require 'json'
+
+# Serialize to JSON
+json = JSON.pretty_generate(doc.to_h)
+
+# Deserialize from JSON
+data = JSON.parse(json)
+doc = Prosereflect::Parser.parse_document(data)
+----
+
+== Step Serialization
+
+Transform steps can be serialized to JSON:
+
+[source,ruby]
+----
+step = Prosereflect::Transform::ReplaceStep.new(2, 5, slice)
+json = step.to_json
+# => {"stepType" => "replace", "from" => 2, "to" => 5, "slice" => [...]}
+
+# Deserialize
+step = Prosereflect::Transform::ReplaceStep.from_json(schema, json)
+----
+
+== to_h Behavior
+
+The `to_h` method includes:
+
+* `type` -- always included
+* `attrs` -- only if non-empty
+* `marks` -- only if non-empty
+* `content` -- only if non-empty
+
+This matches ProseMirror's JSON serialization format where omitted fields use defaults.

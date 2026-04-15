@@ -1,0 +1,20 @@
+type: doc
+content:
+  - type: blockquote
+    content:
+      - type: paragraph
+        content:
+          - type: text
+            text: Quoted text
+      - type: paragraph
+        content:
+          - type: text
+            text: More quoted text
+  - type: horizontal_rule
+  - type: paragraph
+    content:
+      - type: text
+        text: "Line 1"
+      - type: hard_break
+      - type: text
+        text: "Line 2"

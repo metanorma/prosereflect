@@ -1,0 +1,79 @@
+---
+layout: default
+title: Node API
+parent: Reference
+nav_order: 1
+---
+= Node API
+
+== Prosereflect::Node
+
+Base class for all document elements.
+
+=== Attributes
+
+* `type` (String) -- The node type (e.g. "doc", "paragraph", "text")
+* `attrs` (Hash) -- Node-specific attributes
+* `marks` (Array) -- Formatting marks applied to this node
+* `content` (Array) -- Child nodes
+
+=== Class Methods
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `Node.create(type, attrs)` | Create a new node with the given type and attrs
+| `Node.from_json(schema, json)` | Deserialize from JSON (requires schema)
+|===
+
+=== Instance Methods
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `node_size` | Size in document position space
+| `text?` | Whether this is a text node
+| `text_content` | Combined text of all descendant text nodes
+| `cut(from, to)` | Return a copy restricted to position range
+| `copy(content)` | Return a copy with different content
+| `add_child(node)` | Append a child node
+| `find_first(type)` | Find first descendant of type
+| `find_all(type)` | Find all descendants of type
+| `find_children(klass)` | Find direct children of class
+| `resolve(pos)` | Resolve position to ResolvedPos
+| `nodes_between(from, to, &block)` | Iterate nodes in position range
+| `descendants(&block)` | Iterate all descendant nodes
+| `eq?(other)` | Structural equality
+| `to_h` | Serialize to ProseMirror hash
+| `to_yaml` | Serialize to YAML
+|===
+
+== Prosereflect::Text
+
+Text node (PM_TYPE: "text").
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `text` | The text string
+| `node_size` | `text.length + 1`
+| `text?` | Always `true`
+|===
+
+== Prosereflect::Mark::Base
+
+Base class for all marks.
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `type` | The mark type string
+| `attrs` | Mark attributes (e.g. href for links)
+| `to_h` | Serialize to hash
+|===
+
+Mark subclasses: `Bold`, `Italic`, `Code`, `Link`, `Strike`, `Subscript`, `Superscript`, `Underline`.

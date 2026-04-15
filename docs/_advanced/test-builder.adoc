@@ -1,0 +1,61 @@
+---
+layout: default
+title: Test Builder
+parent: Advanced
+nav_order: 5
+---
+= Test Builder
+
+`TestBuilder` provides a DSL for constructing ProseMirror documents in tests, inspired by ProseMirror's test-builder.
+
+== Basic Usage
+
+[source,ruby]
+----
+require 'prosereflect/test_builder'
+
+# Parse a document from DSL notation
+doc = TestBuilder.parse('doc(p("hello world"))')
+----
+
+== DSL Syntax
+
+The DSL uses function-call syntax to build document trees:
+
+* `doc(...)` -- document node
+* `p(...)` -- paragraph node
+* `h1(...)` through `h6(...)` -- heading nodes
+* `text(...)` -- text node
+* `table(...)` -- table node
+* `ul(...)` / `ol(...)` -- list nodes
+
+Strings in quotes become text nodes:
+
+[source,ruby]
+----
+doc(p("hello"))                    # paragraph with text
+doc(p("hello ", bold("world")))    # paragraph with bold text
+----
+
+== Position Markers
+
+Insert markers to track positions in tests:
+
+* `<|>` -- cursor position
+* `<|name>` -- named anchor
+* `<1>` -- numbered position
+
+[source,ruby]
+----
+content, positions = TestBuilder.extract_markers('doc(p("hello<|a> world<|b>"))')
+positions["a"]  # => position of first marker
+positions["b"]  # => position of second marker
+----
+
+== Schema Integration
+
+[source,ruby]
+----
+builder = TestBuilder.for_schema(schema)
+doc = builder.parse('doc(p("hello"))')
+----

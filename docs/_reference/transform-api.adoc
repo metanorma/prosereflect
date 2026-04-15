@@ -1,0 +1,77 @@
+---
+layout: default
+title: Transform API
+parent: Reference
+nav_order: 3
+---
+= Transform API
+
+== Prosereflect::Transform::Transform
+
+=== Constructor
+
+`Transform.new(doc)` -- create a transform chain for the given document.
+
+=== Step-adding Methods
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `add_mark(from, to, mark)` | Add a mark to range
+| `remove_mark(from, to, mark)` | Remove a mark from range
+| `insert(pos, content)` | Insert content at position
+| `delete(from, to)` | Delete content in range
+| `replace(from, to, slice)` | Replace range with slice
+| `replace_with(from, to, *nodes)` | Replace range with nodes
+| `set_node_attribute(pos, attrs)` | Set attributes on node at pos
+| `set_doc_attribute(attrs)` | Set document-level attributes
+| `split(pos, depth)` | Split at position
+| `join(pos, depth)` | Join nodes at position
+| `lift(range, target)` | Lift content out of wrapper
+| `wrap(range, wrappers)` | Wrap content in new nodes
+|===
+
+=== Access Methods
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `doc` | Apply steps and return resulting document
+| `steps` | Array of accumulated Step objects
+| `mapping` | The Mapping tracking position changes
+| `maps` | Array of StepMap objects
+| `size` | Number of accumulated steps
+| `empty?` | Whether no steps are accumulated
+|===
+
+=== Other Methods
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `apply` | Apply all steps (returns self)
+| `rollback` | Undo the last step
+| `clone` | Create a new Transform with same doc
+| `can_apply?` | Check if all steps can be applied
+|===
+
+== Step Types
+
+All inherit from `Prosereflect::Transform::Step`.
+
+* `ReplaceStep` -- replace range with slice
+* `ReplaceAroundStep` -- replace around a gap
+* `AddMarkStep` -- add mark to range
+* `RemoveMarkStep` -- remove mark from range
+* `AttrStep` -- set node attributes
+* `InsertStep` -- insert content at position
+* `DeleteStep` -- delete content in range
+
+== Supporting Types
+
+* `Slice` -- document slice with open boundaries
+* `StepMap` -- position mapping for a single step
+* `Mapping` -- composed position mapping across multiple steps

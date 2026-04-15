@@ -1,0 +1,65 @@
+---
+layout: default
+title: Document Model
+parent: Understanding
+nav_order: 1
+---
+= Document Model
+
+prosereflect models a ProseMirror document as a tree of Node objects. Every node has a `type`, optional `attrs`, optional `marks`, and optional `content` (child nodes).
+
+== Node Hierarchy
+
+----
+Document
+├── Paragraph
+│   ├── Text (with marks)
+│   └── Text
+├── Heading (level: 1-6)
+│   └── Text
+├── Table
+│   ├── TableRow
+│   │   ├── TableHeader
+│   │   └── TableCell
+│   │       └── Paragraph
+│   └── TableRow
+├── BulletList / OrderedList
+│   └── ListItem
+│       └── Paragraph
+├── Blockquote
+│   └── Paragraph
+├── CodeBlockWrapper
+│   └── CodeBlock
+├── Image
+├── HorizontalRule
+└── ...
+----
+
+== Node Size
+
+Each node has a `node_size` that represents its footprint in the document position space:
+
+* **Non-text nodes**: `1` (opening token) + sum of children's `node_size`
+* **Text nodes**: `text.length + 1`
+
+Example: A document with one paragraph containing "hi" has `node_size` of 5:
+
+[source,ruby]
+----
+doc.node_size  # 1 (doc) + 1 (para open) + 3 ("hi" + 1) = 5
+----
+
+== Positions
+
+Positions are integer offsets into the document tree. Position 0 is before the first child of the root. Each non-text node contributes its opening token (position +1) and its content. Text nodes contribute `text.length + 1`.
+
+[source,ruby]
+----
+# doc(p("abc"))
+# Position 0: before doc content
+# Position 1: before paragraph content
+# Position 2: before "a"
+# Position 3: between "a" and "b"
+# Position 4: between "b" and "c"
+# Position 5: after "c" (end of text)
+----

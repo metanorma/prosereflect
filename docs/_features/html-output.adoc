@@ -1,0 +1,45 @@
+---
+layout: default
+title: HTML Output
+parent: Features
+nav_order: 4
+---
+= HTML Output
+
+`Prosereflect::Output::Html` converts ProseMirror document models to HTML strings using Nokogiri.
+
+== Basic Conversion
+
+[source,ruby]
+----
+require 'prosereflect'
+
+doc = Prosereflect::Document.create
+para = doc.add_paragraph("Hello")
+para.add_text(" bold", [Prosereflect::Mark::Bold.new])
+
+html = Prosereflect::Output::Html.convert(doc)
+# => "<html><body><p>Hello<strong> bold</strong></p></body></html>"
+----
+
+== DOMSerializer
+
+`Prosereflect::Output::DOMSerializer` provides fine-grained control over HTML output:
+
+* `serialize_node(node)` -- serialize a single node
+* `render_text(text, marks)` -- render text with marks applied
+
+== Whitespace Handling
+
+The serializer handles whitespace differently depending on the parent node type:
+
+* **Code blocks** (`code_block`, `code_block_wrapper`): whitespace is preserved exactly
+* **Regular blocks** (`paragraph`, `heading`): whitespace is collapsed (multiple spaces become one)
+* **`white-space: pre`** nodes: whitespace is preserved
+
+Methods involved:
+
+* `whitespace_mode(node)` -- returns `:preserve` or `:collapse`
+* `collapse_whitespace(text)` -- collapses runs of whitespace
+* `normalize_whitespace(text)` -- replaces tabs/newlines with spaces
+* `process_text_whitespace(text, node)` -- applies the appropriate mode

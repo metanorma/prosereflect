@@ -1,0 +1,88 @@
+---
+layout: default
+title: Step Types
+parent: Advanced
+nav_order: 2
+---
+= Step Types
+
+Each step is an atomic document change. All steps inherit from `Prosereflect::Transform::Step`.
+
+== Step Base Class
+
+Every step implements:
+
+* `apply(doc)` -- apply to a document, returns `Result` (ok/fail)
+* `get_map` -- returns a `StepMap` for position tracking
+* `invert(doc)` -- returns a step that undoes this one
+* `merge(other)` -- optionally merge with another step (returns nil if not possible)
+* `to_json` -- serialize to JSON
+* `step_type` -- string identifier for the step type
+
+== ReplaceStep
+
+Replaces a range of content with a slice:
+
+[source,ruby]
+----
+step = Prosereflect::Transform::ReplaceStep.new(from, to, slice)
+result = step.apply(doc)
+# step_type: "replace"
+----
+
+== ReplaceAroundStep
+
+Replaces content while preserving a "gap" -- used by lift and wrap operations:
+
+[source,ruby]
+----
+step = Prosereflect::Transform::ReplaceAroundStep.new(
+  from, to, gap_from, gap_to, slice, insert, structure: false
+)
+# step_type: "replaceAround"
+----
+
+The `structure` flag prevents the step from overwriting content in the non-gap range.
+
+== AddMarkStep / RemoveMarkStep
+
+Add or remove a mark over a range:
+
+[source,ruby]
+----
+add_step = Prosereflect::Transform::AddMarkStep.new(from, to, mark)
+remove_step = Prosereflect::Transform::RemoveMarkStep.new(from, to, mark)
+# step_types: "addMark", "removeMark"
+----
+
+== AttrStep
+
+Set attributes on a node at a position:
+
+[source,ruby]
+----
+step = Prosereflect::Transform::AttrStep.new(pos, { "level" => 3 })
+# step_type: "attr"
+----
+
+== InsertStep / DeleteStep
+
+Insert or delete content at a position:
+
+[source,ruby]
+----
+insert_step = Prosereflect::Transform::InsertStep.new(pos, content)
+delete_step = Prosereflect::Transform::DeleteStep.new(from, to)
+----
+
+== Result
+
+`Step::Result` indicates success or failure:
+
+[source,ruby]
+----
+result = step.apply(doc)
+result.ok?     # => true if successful
+result.doc     # => the new document (on success)
+result.failed  # => error message (on failure)
+----

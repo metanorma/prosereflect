@@ -423,4 +423,132 @@ RSpec.describe Prosereflect::Node do
       expect(node.to_h).to eq(expected)
     end
   end
+
+  describe "#node_size" do
+    it "returns 1 for empty node" do
+      node = described_class.create("empty")
+      expect(node.node_size).to eq(1)
+    end
+
+    it "includes text children" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("hello"))
+      # 1 (parent) + 6 (text "hello") = 7
+      expect(node.node_size).to eq(7)
+    end
+
+    it "sums multiple children" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("ab"))
+      node.add_child(Prosereflect::Text.create("cd"))
+      # 1 (parent) + 3 ("ab") + 3 ("cd") = 7
+      expect(node.node_size).to eq(7)
+    end
+
+    it "handles deeply nested content" do
+      doc = Prosereflect::Document.create
+      para = Prosereflect::Paragraph.create
+      para.add_child(Prosereflect::Text.create("hi"))
+      doc.add_child(para)
+      # 1 (doc) + 1 (para) + 3 (text "hi") = 5
+      expect(doc.node_size).to eq(5)
+    end
+  end
+
+  describe "#text?" do
+    it "returns false for regular nodes" do
+      expect(described_class.create("node").text?).to be false
+      expect(Prosereflect::Paragraph.create.text?).to be false
+      expect(Prosereflect::Document.create.text?).to be false
+    end
+
+    it "returns true for Text nodes" do
+      expect(Prosereflect::Text.create("hello").text?).to be true
+    end
+  end
+
+  describe "#cut" do
+    it "returns self for full range" do
+      node = described_class.create("node")
+      expect(node.cut(0, 1)).to eq(node)
+    end
+
+    it "returns self for default range" do
+      node = described_class.create("node")
+      expect(node.cut).to eq(node)
+    end
+
+    it "returns copy with subset of content" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("first"))
+      node.add_child(Prosereflect::Text.create("second"))
+      cut_node = node.cut(0, 1 + 7) # 1 parent + first text (7)
+      expect(cut_node).not_to eq(node)
+    end
+  end
+
+  describe "#nodes_between" do
+    it "yields children in range" do
+      node = described_class.create("parent")
+      t1 = Prosereflect::Text.create("ab")
+      t2 = Prosereflect::Text.create("cd")
+      node.add_child(t1)
+      node.add_child(t2)
+
+      visited = []
+      node.nodes_between(0, 6) { |n, _pos, _i| visited << n }
+      expect(visited).to include(t1)
+    end
+
+    it "does not yield for empty range" do
+      node = described_class.create("parent")
+      visited = []
+      node.nodes_between(0, 0) { |n| visited << n }
+      expect(visited).to be_empty
+    end
+  end
+
+  describe "#descendants" do
+    it "iterates over all descendants" do
+      doc = Prosereflect::Document.create
+      para = Prosereflect::Paragraph.create
+      text = Prosereflect::Text.create("hello")
+      para.add_child(text)
+      doc.add_child(para)
+
+      visited = []
+      doc.descendants { |n, _pos, _i| visited << n }
+      expect(visited).to include(para)
+    end
+  end
+
+  describe "#eq?" do
+    it "returns true for structurally equal nodes" do
+      n1 = described_class.create("node")
+      n2 = described_class.create("node")
+      expect(n1.eq?(n2)).to be true
+    end
+
+    it "returns false for different types" do
+      n1 = described_class.create("a")
+      n2 = described_class.create("b")
+      expect(n1.eq?(n2)).to be false
+    end
+  end
+
+  describe "#copy" do
+    it "creates a shallow copy with same type and attrs" do
+      node = described_class.create("node", "key" => "val")
+      copy = node.copy
+      expect(copy.to_h).to eq(node.to_h)
+      expect(copy).not_to equal(node)
+    end
+
+    it "creates copy with new content" do
+      node = described_class.create("parent")
+      copy = node.copy([Prosereflect::Text.create("new")])
+      expect(copy.content.length).to eq(1)
+      expect(node.content).to be_empty
+    end
+  end
 end

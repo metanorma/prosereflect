@@ -1,0 +1,47 @@
+---
+layout: default
+title: User Mentions
+parent: Features
+nav_order: 5
+---
+= User Mentions
+
+prosereflect supports user @mentions as a special inline node type.
+
+== Creating Mentions
+
+[source,ruby]
+----
+doc = Prosereflect::Document.create
+para = doc.add_paragraph("Hello ")
+user = Prosereflect::User.new
+user.id = "123"
+para.add_child(user)
+para.add_text("!")
+----
+
+== HTML Representation
+
+User mentions are represented as `<user-mention>` elements in HTML:
+
+[source,ruby]
+----
+html = Prosereflect::Output::Html.convert(doc)
+# includes: <user-mention data-id="123"></user-mention>
+----
+
+== Parsing from HTML
+
+[source,ruby]
+----
+html = '<p>Hello <user-mention data-id="123"></user-mention>!</p>'
+doc = Prosereflect::Input::Html.parse(html)
+users = doc.find_all('user')
+users.first.id  # => "123"
+----
+
+== Use Cases
+
+* Mentioning users in comments or messages
+* Tagging users in collaborative documents
+* Tracking user references in content

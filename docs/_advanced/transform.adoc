@@ -1,0 +1,92 @@
+---
+layout: default
+title: Transforms
+parent: Advanced
+nav_order: 1
+---
+= Transforms
+
+`Prosereflect::Transform::Transform` provides a chainable API for composing document changes as a sequence of steps. Each transform accumulates steps and their position mappings.
+
+== Creating a Transform
+
+[source,ruby]
+----
+doc = Prosereflect::Parser.parse_document(data)
+tx = Prosereflect::Transform::Transform.new(doc)
+----
+
+== Operations
+
+=== Adding and Removing Marks
+
+[source,ruby]
+----
+mark = Prosereflect::Mark::Bold.new
+tx.add_mark(1, 4, mark)      # Bold text from position 1 to 4
+tx.remove_mark(1, 4, mark)   # Remove bold from position 1 to 4
+----
+
+=== Inserting and Deleting
+
+[source,ruby]
+----
+tx.insert(5, some_content)   # Insert content at position 5
+tx.delete(2, 7)              # Delete content from position 2 to 7
+----
+
+=== Replacing
+
+[source,ruby]
+----
+slice = Prosereflect::Transform::Slice.new(fragment)
+tx.replace(2, 7, slice)      # Replace positions 2-7 with slice content
+tx.replace_with(2, 7, node)  # Replace positions 2-7 with nodes
+----
+
+=== Structural Operations
+
+[source,ruby]
+----
+tx.split(5)        # Split the document at position 5
+tx.join(5)         # Join two nodes at position 5
+tx.lift(range, target_depth)   # Lift content out of wrapper
+tx.wrap(range, wrappers)       # Wrap content in new nodes
+----
+
+=== Setting Attributes
+
+[source,ruby]
+----
+tx.set_node_attribute(pos, { "level" => 3 })
+tx.set_doc_attribute({ "meta" => "value" })
+----
+
+== Applying Transforms
+
+[source,ruby]
+----
+# Apply all steps and get the resulting document
+new_doc = tx.doc
+
+# Check step count
+tx.size   # => number of accumulated steps
+tx.empty? # => whether any steps exist
+----
+
+== Mappings
+
+Each step records a `StepMap` describing how positions change. The transform's `mapping` tracks all maps:
+
+[source,ruby]
+----
+tx.maps    # => array of StepMap objects
+tx.mapping.map(pos)  # => map a position through all steps
+----
+
+== Rollback
+
+[source,ruby]
+----
+tx.rollback  # Undo the last step
+----

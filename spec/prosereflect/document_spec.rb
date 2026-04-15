@@ -282,9 +282,9 @@ RSpec.describe Prosereflect::Document do
           "content" => [{
             "type" => "code_block",
             "attrs" => {
-              "content" => "def example\n  puts 'Hello'\nend",
               "language" => "ruby",
             },
+            "content" => ["def example\n  puts 'Hello'\nend"],
           }],
         }, {
           "type" => "blockquote",

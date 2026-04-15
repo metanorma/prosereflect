@@ -1,0 +1,45 @@
+---
+layout: default
+title: Home
+nav_order: 1
+---
+
+= Prosereflect Documentation
+
+`prosereflect` is a Ruby gem for working with the document structure used by the https://prosemirror.net/[ProseMirror rich text editor].
+
+It provides a set of models and utilities for parsing, manipulating, and accessing the hierarchical document tree structure represented in ProseMirror's JSON/YAML format.
+
+== Quick Start
+
+Install the gem:
+
+[source,sh]
+----
+gem install prosereflect
+----
+
+Parse a document:
+
+[source,ruby]
+----
+require 'prosereflect'
+
+doc = Prosereflect::Parser.parse_document({
+  "type" => "doc",
+  "content" => [
+    { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Hello world" }] }
+  ]
+})
+----
+
+== Documentation Sections
+
+* x:features:node-types[Node Types] -- All available node types and their attributes
+* x:features:marks[Marks] -- Text formatting marks (bold, italic, links, etc.)
+* x:understanding:document-model[Document Model] -- Node hierarchy and content model
+* x:understanding:fragment[Fragment] -- Flat content collections
+* x:understanding:resolved-position[Resolved Positions] -- Position resolution in the document tree
+* x:advanced:transform[Transforms] -- Document transformations and step-based editing
+* x:advanced:schema[Schema] -- Schema definition and validation
+* x:guides:round-trip-html[HTML Round-Trip] -- Convert between HTML and ProseMirror documents

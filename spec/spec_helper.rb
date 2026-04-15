@@ -4,6 +4,7 @@ require "bundler/setup"
 require "yaml"
 require "json"
 require "prosereflect"
+require "prosereflect/schema"
 
 # Load shared examples
 Dir[File.join(__dir__, "support", "**", "*.rb")].each { |f| require f }

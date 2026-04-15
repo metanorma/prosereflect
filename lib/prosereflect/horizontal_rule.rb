@@ -59,6 +59,15 @@ module Prosereflect
     end
 
     # Override content-related methods since horizontal rules don't have content
+    def to_h
+      hash = super
+      if hash["attrs"]
+        %w[style width thickness].each { |k| hash["attrs"].delete(k) if hash["attrs"][k].nil? }
+        hash.delete("attrs") if hash["attrs"].empty?
+      end
+      hash
+    end
+
     def add_child(*)
       raise NotImplementedError, "Horizontal rule nodes cannot have children"
     end

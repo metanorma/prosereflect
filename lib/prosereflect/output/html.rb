@@ -35,6 +35,31 @@ module Prosereflect
           html
         end
 
+        # Render document with options
+        def render(document, options = {})
+          options = {
+            document: true,
+            text: ->(text, _marks) { text },
+            mark: ->(_mark, content) { content },
+            node: ->(_node, content) { content },
+          }.merge(options)
+
+          serializer = DOMSerializer.new(document.schema, options)
+          serializer.serialize(document)
+        end
+
+        # Render single node with marks
+        def render_node(node, options = {})
+          serializer = DOMSerializer.new(nil, options)
+          serializer.render_node(node)
+        end
+
+        # Render text with marks applied
+        def render_text(text, marks, options = {})
+          serializer = DOMSerializer.new(nil, options)
+          serializer.render_text(text, marks)
+        end
+
         private
 
         # Process a node and its children
@@ -369,6 +394,208 @@ module Prosereflect
           node.content.each do |child|
             process_node(child, builder)
           end
+        end
+      end
+    end
+
+    # DOMSerializer provides configurable document serialization to HTML
+    class DOMSerializer
+      attr_reader :schema, :options, :marks
+
+      def initialize(schema, options = {})
+        @schema = schema
+        @options = options
+        @marks = build_mark_serializers
+      end
+
+      def serialize(document)
+        render_node(document)
+      end
+
+      def serialize_node(node)
+        render_node(node)
+      end
+
+      def render_node(node)
+        return render_text(node.text, node.marks) if node.text?
+
+        builder = Nokogiri::HTML::Builder.new
+        render_node_to_builder(node, builder)
+        builder.doc.root.children.to_html
+      end
+
+      def render_node_to_builder(node, builder)
+        content = render_node_content(node)
+        wrap_node(node, content, builder)
+      end
+
+      def render_text(text, node_marks = nil)
+        marks_to_apply = node_marks || []
+        marks_to_apply.each do |mark|
+          text = apply_mark(mark, text)
+        end
+        text
+      end
+
+      def apply_mark(mark, content)
+        mark_handler = @marks[mark.type]
+        return content unless mark_handler
+
+        case mark.type
+        when "bold"
+          "<strong>#{content}</strong>"
+        when "italic"
+          "<em>#{content}</em>"
+        when "code"
+          "<code>#{content}</code>"
+        when "link"
+          href = extract_mark_attr(mark, "href")
+          "<a href=\"#{href}\">#{content}</a>"
+        when "strike"
+          "<del>#{content}</del>"
+        when "underline"
+          "<u>#{content}</u>"
+        when "subscript"
+          "<sub>#{content}</sub>"
+        when "superscript"
+          "<sup>#{content}</sup>"
+        else
+          content
+        end
+      end
+
+      private
+
+      def build_mark_serializers
+        return {} unless @schema
+
+        @schema.marks.transform_values do |_mark_type|
+          ->(mark, content) { apply_mark(mark, content) }
+        end
+      end
+
+      def extract_mark_attr(mark, attr_name)
+        return nil unless mark.respond_to?(:attrs)
+
+        attrs = mark.attrs
+        return nil unless attrs.is_a?(Hash)
+
+        attrs[attr_name]
+      end
+
+      def render_node_content(node)
+        return render_text(node.text, node.marks) if node.text?
+
+        children = node.content.map { |child| render_node(child) }.join
+        apply_node_marks(node, children)
+      end
+
+      def apply_node_marks(node, content)
+        return content unless node.marks && !node.marks.empty?
+
+        node.marks.reverse_each do |mark|
+          content = apply_mark(mark, content)
+        end
+        content
+      end
+
+      def wrap_node(node, content, builder)
+        tag_name = node_tag_name(node)
+        return builder << content unless tag_name
+
+        builder.tag(tag_name, wrap_attrs(node)) do
+          builder << content
+        end
+      end
+
+      def node_tag_name(node)
+        case node.type
+        when "paragraph" then "p"
+        when "heading" then "h#{node.attrs[:level] || 1}"
+        when "table" then "table"
+        when "table_row" then "tr"
+        when "table_cell" then "td"
+        when "table_header" then "th"
+        when "bullet_list" then "ul"
+        when "ordered_list" then "ol"
+        when "list_item" then "li"
+        when "blockquote" then "blockquote"
+        when "hard_break" then "br"
+        when "horizontal_rule" then "hr"
+        when "code_block_wrapper" then "pre"
+        when "code_block" then "code"
+        when "image" then "img"
+        when "doc", "text", "user"
+          nil
+        end
+      end
+
+      def wrap_attrs(node)
+        return nil unless node.respond_to?(:attrs) && node.attrs.is_a?(Hash)
+
+        attrs = {}
+        case node.type
+        when "image"
+          attrs[:src] = node.attrs["src"]
+          attrs[:alt] = node.attrs["alt"] if node.attrs["alt"]
+          attrs[:title] = node.attrs["title"] if node.attrs["title"]
+        when "ordered_list"
+          attrs[:start] = node.attrs["start"] if node.attrs["start"]
+        end
+        attrs.empty? ? nil : attrs
+      end
+
+      # Check if a node should preserve whitespace
+      # Nodes like <pre>, <textarea>, or nodes with style="white-space: pre" preserve whitespace
+      def preserve_whitespace?(node)
+        return false unless node.respond_to?(:type)
+
+        case node.type
+        when "code_block", "code_block_wrapper", "pre"
+          return true
+        end
+
+        # Check for white-space style in attrs
+        if node.respond_to?(:attrs) && node.attrs.is_a?(Hash)
+          style = node.attrs["style"]
+          if style.is_a?(String) && style.include?("white-space: pre")
+            return true
+          end
+        end
+
+        false
+      end
+
+      # Determine how whitespace should be collapsed for a node
+      # Returns a symbol: :preserve, :collapse, :normalize
+      def whitespace_mode(node)
+        if preserve_whitespace?(node)
+          :preserve
+        else
+          :collapse
+        end
+      end
+
+      # Collapse multiple spaces into one
+      def collapse_whitespace(text)
+        text.gsub(/[ \t]+/, " ")
+      end
+
+      # Normalize whitespace (replace tabs/newlines with spaces, collapse multiple spaces)
+      def normalize_whitespace(text)
+        text.gsub(/[\t \n\r]+/, " ")
+      end
+
+      # Process text content with appropriate whitespace handling
+      def process_text_whitespace(text, node)
+        mode = whitespace_mode(node)
+        case mode
+        when :preserve
+          text
+        when :normalize
+          normalize_whitespace(text)
+        else
+          collapse_whitespace(text)
         end
       end
     end

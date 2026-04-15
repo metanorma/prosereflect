@@ -1,0 +1,86 @@
+---
+layout: default
+title: Marks
+parent: Features
+nav_order: 2
+---
+= Marks
+
+Marks represent inline formatting applied to text nodes. prosereflect supports all standard ProseMirror marks.
+
+== Creating Marks
+
+[source,ruby]
+----
+bold = Prosereflect::Mark::Bold.new
+italic = Prosereflect::Mark::Italic.new
+link = Prosereflect::Mark::Link.new(href: "https://example.com")
+----
+
+== Applying Marks to Text
+
+When adding text to a node, pass marks as the second argument:
+
+[source,ruby]
+----
+doc = Prosereflect::Document.create
+para = doc.add_paragraph("Plain text")
+para.add_text(" bold", [Prosereflect::Mark::Bold.new])
+para.add_text(" italic", [Prosereflect::Mark::Italic.new])
+para.add_text(" both", [Prosereflect::Mark::Bold.new, Prosereflect::Mark::Italic.new])
+----
+
+== Available Mark Types
+
+[cols="1,1,3"]
+|===
+| Class | PM Type | Attributes
+
+| `Mark::Bold` | `bold` | none
+| `Mark::Italic` | `italic` | none
+| `Mark::Code` | `code` | none
+| `Mark::Link` | `link` | `href`
+| `Mark::Strike` | `strike` | none
+| `Mark::Subscript` | `subscript` | none
+| `Mark::Superscript` | `superscript` | none
+| `Mark::Underline` | `underline` | none
+|===
+
+== Link Marks
+
+Link marks carry an `href` attribute:
+
+[source,ruby]
+----
+link_mark = Prosereflect::Mark::Link.new
+link_mark.href = "https://example.com"
+# or via constructor:
+link_mark = Prosereflect::Mark::Link.new(href: "https://example.com")
+----
+
+== Serialization
+
+Marks are serialized in the ProseMirror JSON format:
+
+[source,ruby]
+----
+bold = Prosereflect::Mark::Bold.new
+bold.to_h  # => {"type" => "bold"}
+
+link = Prosereflect::Mark::Link.new(href: "https://example.com")
+link.to_h  # => {"type" => "link", "attrs" => {"href" => "https://example.com"}}
+----
+
+== Schema-based Marks
+
+When using a Schema, marks can be created with validation:
+
+[source,ruby]
+----
+schema = Prosereflect::Schema.new(
+  nodes_spec: { "doc" => { content: "block+" }, "paragraph" => { content: "inline*", group: "block" }, "text" => { group: "inline" } },
+  marks_spec: { "bold" => {}, "italic" => {} }
+)
+bold = schema.mark("bold")
+italic = schema.mark("italic")
+----
