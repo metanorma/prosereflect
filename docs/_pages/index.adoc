@@ -1,0 +1,67 @@
+---
+layout: default
+title: Getting Started
+nav_order: 2
+---
+= Getting Started
+
+== What is prosereflect?
+
+`prosereflect` is a Ruby gem for working with the document structure used by the https://prosemirror.net/[ProseMirror rich text editor].
+
+It provides a complete Ruby object model for ProseMirror documents, including:
+
+* Parsing and serialization (JSON, YAML, HTML)
+* A rich node hierarchy with type-safe accessors
+* A full Transform system for step-based document manipulation
+* Schema definition and content validation
+* Position resolution and mapping
+* HTML input and output with whitespace handling
+* A test builder DSL for constructing test documents
+
+== Installation
+
+Add to your Gemfile:
+
+[source,ruby]
+----
+gem 'prosereflect'
+----
+
+Or install directly:
+
+[source,sh]
+----
+gem install prosereflect
+----
+
+== Quick Example
+
+[source,ruby]
+----
+require 'prosereflect'
+
+# Create a document
+doc = Prosereflect::Document.create
+doc.add_paragraph("Hello world")
+
+# Parse from JSON hash
+doc = Prosereflect::Parser.parse_document({
+  "type" => "doc",
+  "content" => [
+    { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Hello" }] }
+  ]
+})
+
+# Parse from HTML
+doc = Prosereflect::Input::Html.parse('<p>Hello <strong>world</strong></p>')
+
+# Convert to HTML
+html = Prosereflect::Output::Html.convert(doc)
+----
+
+== Next Steps
+
+* x:features:node-types[Node Types] -- all available node types
+* x:understanding:document-model[Document Model] -- how the document tree works
+* x:guides:round-trip-html[HTML Round-Trip] -- convert between HTML and ProseMirror

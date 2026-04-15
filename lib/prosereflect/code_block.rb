@@ -82,12 +82,8 @@ module Prosereflect
 
     def to_h
       hash = super
-      hash["attrs"] = {
-        "content" => content,
-        "language" => language,
-      }
+      hash["attrs"] = { "language" => language }
       hash["attrs"]["line_numbers"] = line_numbers if line_numbers
-      hash.delete("content")
       hash
     end
 

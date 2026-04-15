@@ -28,6 +28,8 @@ module Prosereflect
 
     def start=(value)
       @start = value
+      return if value.nil?
+
       self.attrs ||= {}
       attrs["start"] = value
     end

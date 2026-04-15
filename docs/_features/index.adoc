@@ -1,0 +1,15 @@
+---
+layout: default
+title: Features
+nav_order: 3
+has_children: true
+---
+= Features
+
+prosereflect provides a comprehensive set of features for working with ProseMirror documents in Ruby.
+
+* x:node-types[Node Types] -- All available node types and their attributes
+* x:marks[Marks] -- Text formatting marks (bold, italic, links, etc.)
+* x:html-input[HTML Input] -- Parse HTML into ProseMirror documents
+* x:html-output[HTML Output] -- Serialize documents to HTML
+* x:user-mentions[User Mentions] -- @mention support in documents

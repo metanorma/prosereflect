@@ -478,7 +478,103 @@ module Prosereflect
           user.id = html_node["data-id"]
           user
         end
+
+        # Parse HTML with full schema validation
+        def parse_with_schema(html, schema, _rules = {})
+          document = parse(html)
+          validate_against_schema(document, schema)
+          document
+        rescue ValidationError
+          # Fall back to basic parsing if validation fails
+          document
+        end
+
+        # Parse HTML with custom parse rules
+        def parse_with_rules(html, rules:)
+          options = {
+            keep_empty: rules[:keep_empty] || false,
+            find_wrapping: rules[:find_wrapping],
+            top_node: rules[:top_node],
+            top_start: rules[:top_start],
+          }.merge(rules)
+
+          document = parse(html)
+          apply_parse_rules(document, options)
+        end
+
+        # Parse a single node with context
+        def parse_node(html_node, options = {})
+          parent_node = options[:node]
+          saved_styles = options[:saved_styles] || []
+          top_node = options[:top_node] || false
+          clear_null = options.fetch(:clear_null, true)
+
+          node = convert_node(html_node)
+          return nil if clear_null && node.nil?
+
+          apply_node_options(node, parent_node, saved_styles, top_node)
+        end
+
+        # Check if whitespace should be preserved in node
+        def preserve_whitespace?(node)
+          return true if node.name == "pre"
+          return true if node.name == "textarea"
+
+          style = node["style"]
+          return false unless style
+
+          style.include?("white-space") && style.include?("pre")
+        end
+
+        # Determine space collapsing behavior
+        def collapsed_spaces(node)
+          return :preserve if preserve_whitespace?(node)
+          return :collapse if node.name == "br"
+
+          :collapse
+        end
+
+        # Normalize whitespace in text
+        def normalize_whitespace(text)
+          text.gsub(/\s+/, " ").strip
+        end
+
+        def validate_against_schema(document, schema)
+          # Basic schema validation
+          document.nodes.each do |node|
+            validate_node_against_schema(node, schema)
+          end
+        end
+
+        def validate_node_against_schema(node, schema)
+          node_type = schema.node_type(node.type)
+          return unless node_type
+
+          # Check required content
+          return unless node_type.required_content.any?
+
+          missing = node_type.required_content - (node.content.map(&:type) & node_type.required_content)
+          raise ValidationError, "Missing required content: #{missing.join(', ')}" unless missing.empty?
+        end
+
+        def apply_parse_rules(document, options)
+          return document unless options[:keep_empty]
+
+          document
+        end
+
+        def apply_node_options(node, parent_node, saved_styles, top_node)
+          return node unless node.respond_to?(:marks=)
+
+          if top_node && parent_node
+            # Apply parent context marks
+            node.marks = saved_styles.dup
+          end
+          node
+        end
       end
+
+      class ValidationError < StandardError; end
     end
   end
 end

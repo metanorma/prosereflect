@@ -1,0 +1,52 @@
+---
+layout: default
+title: Fragment
+parent: Understanding
+nav_order: 2
+---
+= Fragment
+
+`Prosereflect::Fragment` represents a flat sequence of nodes. It is the primary data structure for node content and slice content.
+
+== Creating Fragments
+
+[source,ruby]
+----
+# From an array of nodes
+frag = Prosereflect::Fragment.new([node1, node2])
+
+# Empty fragment
+frag = Prosereflect::Fragment.empty
+
+# From arbitrary content
+frag = Prosereflect::Fragment.from(node)
+frag = Prosereflect::Fragment.from([node1, node2])
+frag = Prosereflect::Fragment.from(existing_fragment)  # returns as-is
+----
+
+== Core Methods
+
+* `size` -- total node_size of all contained nodes
+* `empty?` -- whether the fragment has no nodes
+* `length` / `count` -- number of nodes
+* `to_a` -- convert to a plain array
+* `each` -- iterate over nodes
+* `[](index)` -- access node by index
+
+== Manipulation
+
+* `append(other)` -- concatenate two fragments (returns new Fragment)
+* `cut(from, to)` -- extract a sub-fragment within position range
+* `replace_child(index, replacement)` -- replace a node at index
+
+== Traversal
+
+* `nodes_between(from, to, &block)` -- iterate nodes within position range, callback receives `(node, position)`
+* `descendants(&block)` -- iterate all descendant nodes
+* `text_between(from, to)` -- extract text between positions
+
+== Comparison
+
+* `eq?(other)` -- structural equality check
+* `find_diff_start(other)` -- find first position where two fragments differ
+* `find_diff_end(other)` -- find last position where two fragments differ

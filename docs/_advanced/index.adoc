@@ -1,0 +1,15 @@
+---
+layout: default
+title: Advanced
+nav_order: 5
+has_children: true
+---
+= Advanced
+
+This section covers advanced topics for power users.
+
+* x:transform[Transforms] -- Step-based document transformations
+* x:steps[Step Types] -- Individual step types and their behavior
+* x:step-map[Step Maps and Mappings] -- Position tracking through transforms
+* x:schema[Schema] -- Schema definition and content validation
+* x:test-builder[Test Builder] -- DSL for building test documents

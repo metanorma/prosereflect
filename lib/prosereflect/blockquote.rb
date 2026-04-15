@@ -74,6 +74,15 @@ module Prosereflect
       attrs.delete("citation")
     end
 
+    def to_h
+      hash = super
+      if hash["attrs"]&.key?("citation") && hash["attrs"]["citation"].nil?
+        hash["attrs"].delete("citation")
+        hash.delete("attrs") if hash["attrs"].empty?
+      end
+      hash
+    end
+
     def add_paragraph(text)
       paragraph = Paragraph.new
       paragraph.add_text(text)

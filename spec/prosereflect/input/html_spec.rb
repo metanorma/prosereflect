@@ -648,9 +648,9 @@ RSpec.describe Prosereflect::Input::Html do
           "content" => [{
             "type" => "code_block",
             "attrs" => {
-              "content" => "def example\n  puts \"Hello\"\nend",
               "language" => "ruby",
             },
+            "content" => ["def example\n  puts \"Hello\"\nend"],
           }],
         }],
       }
@@ -792,6 +792,202 @@ RSpec.describe Prosereflect::Input::Html do
 
       document = described_class.parse(html)
       expect(document.to_h).to eq(expected)
+    end
+  end
+
+  describe ".parse_with_schema" do
+    it "parses HTML and returns a document when validation is bypassed" do
+      html = "<p>Hello world</p>"
+      allow(described_class).to receive(:validate_against_schema)
+      document = described_class.send(:parse_with_schema, html, nil)
+      expect(document).to be_a(Prosereflect::Document)
+      expect(document.to_h["content"].first["type"]).to eq("paragraph")
+    end
+
+    it "preserves document content when validation is bypassed" do
+      html = "<p>Schema test</p>"
+      allow(described_class).to receive(:validate_against_schema)
+      document = described_class.send(:parse_with_schema, html, nil)
+      para = document.to_h["content"].first
+      text_node = para["content"].first
+      expect(text_node["text"]).to eq("Schema test")
+    end
+
+    it "parses complex HTML with validation bypassed" do
+      html = "<h1>Title</h1><p>Paragraph with <strong>bold</strong> text</p>"
+      allow(described_class).to receive(:validate_against_schema)
+      document = described_class.send(:parse_with_schema, html, nil)
+      content = document.to_h["content"]
+      expect(content.length).to eq(2)
+      expect(content[0]["type"]).to eq("heading")
+      expect(content[1]["type"]).to eq("paragraph")
+    end
+
+    it "rescues ValidationError and returns the document" do
+      html = "<p>Validation error test</p>"
+      allow(described_class).to receive(:validate_against_schema).and_raise(
+        Prosereflect::Input::Html::ValidationError, "Missing required content"
+      )
+      document = described_class.send(:parse_with_schema, html, nil)
+      expect(document).to be_a(Prosereflect::Document)
+      expect(document.to_h["content"].first["type"]).to eq("paragraph")
+    end
+  end
+
+  describe ".parse_with_rules" do
+    it "parses HTML with keep_empty option" do
+      html = "<p>Keep empty test</p>"
+      document = described_class.send(:parse_with_rules, html, rules: { keep_empty: true })
+      expect(document).to be_a(Prosereflect::Document)
+      expect(document.to_h["content"].first["type"]).to eq("paragraph")
+    end
+
+    it "parses HTML with empty rules" do
+      html = "<p>Empty rules test</p>"
+      document = described_class.send(:parse_with_rules, html, rules: {})
+      expect(document).to be_a(Prosereflect::Document)
+    end
+
+    it "preserves content with keep_empty false" do
+      html = "<p>Keep empty false</p>"
+      document = described_class.send(:parse_with_rules, html, rules: { keep_empty: false })
+      para = document.to_h["content"].first
+      text_node = para["content"].first
+      expect(text_node["text"]).to eq("Keep empty false")
+    end
+
+    it "accepts top_node option" do
+      html = "<p>Top node test</p>"
+      document = described_class.send(:parse_with_rules, html, rules: { top_node: "doc" })
+      expect(document.to_h["type"]).to eq("doc")
+    end
+  end
+
+  describe ".parse_node" do
+    it "parses a single HTML paragraph node" do
+      doc = Nokogiri::HTML("<p>Single node</p>")
+      html_node = doc.at_css("p")
+      result = described_class.send(:parse_node, html_node)
+      expect(result).to be_a(Prosereflect::Paragraph)
+    end
+
+    it "parses a text node" do
+      doc = Nokogiri::HTML("<p>text content</p>")
+      html_node = doc.at_css("p").children.first
+      result = described_class.send(:parse_node, html_node)
+      expect(result).to be_a(Prosereflect::Text)
+      expect(result.text).to eq("text content")
+    end
+
+    it "returns nil for empty text nodes with clear_null" do
+      doc = Nokogiri::HTML("<p> </p>")
+      html_node = doc.at_css("p").children.first
+      result = described_class.send(:parse_node, html_node, clear_null: true)
+      expect(result).to be_nil
+    end
+
+    it "returns nil for empty text nodes by default" do
+      doc = Nokogiri::HTML("<p>   </p>")
+      html_node = doc.at_css("p").children.first
+      result = described_class.send(:parse_node, html_node)
+      expect(result).to be_nil
+    end
+
+    it "accepts node option for parent context" do
+      doc = Nokogiri::HTML("<p>parent context</p>")
+      html_node = doc.at_css("p")
+      parent_node = Prosereflect::Document.new
+      result = described_class.send(:parse_node, html_node, node: parent_node)
+      expect(result).to be_a(Prosereflect::Paragraph)
+    end
+
+    it "accepts saved_styles option" do
+      doc = Nokogiri::HTML("<p>styled</p>")
+      html_node = doc.at_css("p")
+      result = described_class.send(:parse_node, html_node, saved_styles: [])
+      expect(result).to be_a(Prosereflect::Paragraph)
+    end
+  end
+
+  describe ".preserve_whitespace?" do
+    it "returns true for pre elements" do
+      doc = Nokogiri::HTML("<pre>code</pre>")
+      pre_node = doc.at_css("pre")
+      expect(described_class.send(:preserve_whitespace?, pre_node)).to be true
+    end
+
+    it "returns true for textarea elements" do
+      doc = Nokogiri::HTML("<textarea>text</textarea>")
+      textarea_node = doc.at_css("textarea")
+      expect(described_class.send(:preserve_whitespace?, textarea_node)).to be true
+    end
+
+    it "returns true for elements with white-space: pre style" do
+      doc = Nokogiri::HTML('<div style="white-space: pre">text</div>')
+      div_node = doc.at_css("div")
+      expect(described_class.send(:preserve_whitespace?, div_node)).to be true
+    end
+
+    it "returns false for paragraph elements" do
+      doc = Nokogiri::HTML("<p>text</p>")
+      p_node = doc.at_css("p")
+      expect(described_class.send(:preserve_whitespace?, p_node)).to be false
+    end
+
+    it "returns false for elements without white-space style" do
+      doc = Nokogiri::HTML('<div style="color: red">text</div>')
+      div_node = doc.at_css("div")
+      expect(described_class.send(:preserve_whitespace?, div_node)).to be false
+    end
+
+    it "returns false for elements without style attribute" do
+      doc = Nokogiri::HTML("<div>text</div>")
+      div_node = doc.at_css("div")
+      expect(described_class.send(:preserve_whitespace?, div_node)).to be false
+    end
+
+    it "returns false for elements with white-space but not pre" do
+      doc = Nokogiri::HTML('<div style="white-space: nowrap">text</div>')
+      div_node = doc.at_css("div")
+      expect(described_class.send(:preserve_whitespace?, div_node)).to be false
+    end
+  end
+
+  describe ".normalize_whitespace" do
+    it "replaces multiple spaces with a single space" do
+      expect(described_class.send(:normalize_whitespace, "hello   world")).to eq("hello world")
+    end
+
+    it "replaces tabs with spaces" do
+      expect(described_class.send(:normalize_whitespace, "hello\tworld")).to eq("hello world")
+    end
+
+    it "replaces newlines with spaces" do
+      expect(described_class.send(:normalize_whitespace, "hello\nworld")).to eq("hello world")
+    end
+
+    it "replaces carriage returns with spaces" do
+      expect(described_class.send(:normalize_whitespace, "hello\rworld")).to eq("hello world")
+    end
+
+    it "strips leading and trailing whitespace" do
+      expect(described_class.send(:normalize_whitespace, "  hello  ")).to eq("hello")
+    end
+
+    it "handles mixed whitespace" do
+      expect(described_class.send(:normalize_whitespace, "  hello \t\n world  ")).to eq("hello world")
+    end
+
+    it "returns empty string for whitespace-only input" do
+      expect(described_class.send(:normalize_whitespace, "   ")).to eq("")
+    end
+
+    it "handles an empty string" do
+      expect(described_class.send(:normalize_whitespace, "")).to eq("")
+    end
+
+    it "does not modify a clean string" do
+      expect(described_class.send(:normalize_whitespace, "hello world")).to eq("hello world")
     end
   end
 end

@@ -1,0 +1,112 @@
+---
+layout: default
+title: Schema
+parent: Advanced
+nav_order: 4
+---
+= Schema
+
+`Prosereflect::Schema` defines the structure of valid documents: which node types exist, what content they can contain, and which marks are allowed.
+
+== Creating a Schema
+
+[source,ruby]
+----
+schema = Prosereflect::Schema.new(
+  nodes_spec: {
+    "doc" => { content: "block+" },
+    "paragraph" => { content: "inline*", group: "block" },
+    "heading" => { content: "inline*", group: "block", attrs: { "level" => { "default" => 1 } } },
+    "text" => { group: "inline" }
+  },
+  marks_spec: {
+    "bold" => {},
+    "italic" => {},
+    "link" => { attrs: { "href" => {} } }
+  }
+)
+----
+
+== Requirements
+
+Every schema must define:
+
+* A `"doc"` node type (the top-level container)
+* A `"text"` node type (inline text)
+* At least one block node type in the doc's content expression
+
+== Content Expressions
+
+Content expressions define what children a node can have. Supported syntax:
+
+* `"block+"` -- one or more block nodes
+* `"inline*"` -- zero or more inline nodes
+* `"paragraph heading"` -- a paragraph followed by a heading
+* `"(paragraph | heading)"` -- either paragraph or heading
+* `"block{2,4}"` -- between 2 and 4 block nodes
+* `"block?"` -- optional block node
+
+== NodeType
+
+Access and use node types from a schema:
+
+[source,ruby]
+----
+para_type = schema.node_type("paragraph")
+para_type.name             # => "paragraph"
+para_type.is_block?        # => true
+para_type.is_inline?       # => false
+para_type.is_textblock?    # => true
+para_type.is_leaf?         # => false
+para_type.is_atom?         # => false
+----
+
+Creating validated nodes:
+
+[source,ruby]
+----
+# Create with validation
+node = para_type.create_checked(nil, [text_node])
+
+# Create with defaults
+node = para_type.create_and_fill
+
+# Check content validity
+para_type.valid_content?(fragment)
+----
+
+== MarkType
+
+Access and use mark types:
+
+[source,ruby]
+----
+bold_type = schema.mark_type("bold")
+mark = bold_type.create      # Schema::Mark instance
+mark.attrs                  # => {}
+
+link_type = schema.mark_type("link")
+link = link_type.create("href" => "https://example.com")
+link.attrs  # => {"href" => "https://example.com"}
+----
+
+== ContentMatch
+
+`ContentMatch` is the engine that validates content expressions. It uses an NFA/DFA approach to parse and match content expressions:
+
+* `match_type(node_type)` -- try to match a node type, returns next match state or nil
+* `match_fragment(fragment)` -- match a full fragment
+* `valid_end` -- whether this state is a valid end state
+* `fill_before(after:, to_end:)` -- compute filler content
+* `find_wrapping(target_type)` -- find wrapping nodes for content
+* `inline_content?` -- whether this match accepts inline content
+* `default_type` -- the default node type for this match
+
+== Validation Errors
+
+The schema raises `Prosereflect::SchemaErrors::ValidationError` for:
+
+* Missing required node types (doc, text)
+* Name collisions between nodes and marks
+* Invalid content in created nodes
+* Missing required attributes

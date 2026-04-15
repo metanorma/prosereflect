@@ -1,0 +1,54 @@
+---
+layout: default
+title: Slice
+parent: Understanding
+nav_order: 4
+---
+= Slice
+
+`Prosereflect::Transform::Slice` represents a contiguous portion of a document that can be inserted, deleted, or moved. Slices track "open" boundaries for proper node joining during replacements.
+
+== Creating Slices
+
+[source,ruby]
+----
+# From a fragment
+slice = Prosereflect::Transform::Slice.new(fragment)
+
+# With open boundaries
+slice = Prosereflect::Transform::Slice.new(fragment, open_start: 1, open_end: 1)
+
+# Empty slice
+slice = Prosereflect::Transform::Slice.empty
+----
+
+== Open Boundaries
+
+`open_start` and `open_end` indicate how many levels of the slice's first/last nodes are "open" (not included in the content). This is used when splitting or joining nodes during transforms:
+
+* `open_start = 0` -- the first node is complete
+* `open_start = 1` -- the first node is open at the top (its content extends beyond the slice)
+
+== Properties
+
+* `content` -- the `Fragment` containing the slice's nodes
+* `open_start` -- number of open levels at the start
+* `open_end` -- number of open levels at the end
+* `size` -- total size including open boundaries (`content_size + open_start + open_end`)
+* `content_size` -- size of just the content fragment
+* `empty?` -- whether the slice has no content and no open boundaries
+
+== Methods
+
+* `cut(from, to)` -- return a sub-slice
+* `eq?(other)` -- structural equality check
+
+== Use in Transforms
+
+Slices are used as the replacement content in `ReplaceStep` and `ReplaceAroundStep`:
+
+[source,ruby]
+----
+tx = Prosereflect::Transform::Transform.new(doc)
+tx.replace(2, 5, Prosereflect::Transform::Slice.new(fragment))
+----

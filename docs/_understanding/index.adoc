@@ -1,0 +1,14 @@
+---
+layout: default
+title: Understanding
+nav_order: 4
+has_children: true
+---
+= Understanding
+
+This section explains the core concepts behind prosereflect's document model.
+
+* x:document-model[Document Model] -- Node hierarchy and content model
+* x:fragment[Fragment] -- Flat content collections
+* x:resolved-position[Resolved Positions] -- Position resolution in the document tree
+* x:slice[Slice] -- Document slices with open boundaries

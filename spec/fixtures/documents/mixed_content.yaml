@@ -1,0 +1,40 @@
+type: doc
+content:
+  - type: heading
+    attrs:
+      level: 2
+    content:
+      - type: text
+        text: Mixed Content
+  - type: paragraph
+    content:
+      - type: text
+        text: Normal text
+      - type: text
+        text: " bold"
+        marks:
+          - type: bold
+      - type: text
+        text: " and "
+      - type: text
+        text: italic
+        marks:
+          - type: italic
+      - type: text
+        text: " with a "
+      - type: text
+        text: link
+        marks:
+          - type: link
+            attrs:
+              href: https://example.com
+  - type: code_block
+    attrs:
+      language: ruby
+    content:
+      - type: text
+        text: puts 'hello'
+  - type: image
+    attrs:
+      src: https://example.com/image.png
+      alt: Example image

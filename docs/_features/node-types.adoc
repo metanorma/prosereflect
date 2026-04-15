@@ -1,0 +1,124 @@
+---
+layout: default
+title: Node Types
+parent: Features
+nav_order: 1
+---
+= Node Types
+
+prosereflect provides node classes for all standard ProseMirror node types. Each inherits from `Prosereflect::Node` and defines a `PM_TYPE` constant.
+
+== Block Nodes
+
+=== Document
+
+Top-level container. Create with `Document.create`:
+
+[source,ruby]
+----
+doc = Prosereflect::Document.create
+doc.add_paragraph("Hello world")
+----
+
+Convenience methods: `tables`, `paragraphs`, `find_first`, `find_all`, `find_children`, `add_paragraph`, `add_heading`, `add_table`, `add_image`, `add_bullet_list`, `add_ordered_list`, `add_blockquote`, `add_horizontal_rule`, `add_code_block_wrapper`, `add_user`.
+
+=== Paragraph
+
+Represents a paragraph of text.
+
+[source,ruby]
+----
+para = Prosereflect::Paragraph.new
+para.add_text("Hello")
+para.text_content  # => "Hello"
+----
+
+=== Heading
+
+Heading with level attribute (1-6):
+
+[source,ruby]
+----
+heading = Prosereflect::Heading.new
+heading.level = 2
+heading.add_text("Title")
+----
+
+=== Table, TableRow, TableCell, TableHeader
+
+Table structures with convenience methods:
+
+[source,ruby]
+----
+table = doc.add_table
+row = table.add_row
+cell = row.add_cell
+cell.add_paragraph("Data")
+----
+
+Table methods: `header_row`, `data_rows`, `cell_at(row, col)`, `rows`.
+
+=== Lists
+
+`BulletList` and `OrderedList` contain `ListItem` children:
+
+[source,ruby]
+----
+list = doc.add_bullet_list
+item = list.add_item
+item.add_paragraph("First item")
+----
+
+`OrderedList` supports a `start` attribute for numbering.
+
+=== Blockquote
+
+Contains block-level children:
+
+[source,ruby]
+----
+quote = doc.add_blockquote
+quote.add_paragraph("To be or not to be")
+----
+
+=== CodeBlockWrapper and CodeBlock
+
+Code blocks with syntax highlighting:
+
+[source,ruby]
+----
+wrapper = doc.add_code_block_wrapper
+block = wrapper.add_code_block("puts 'hello'", language: "ruby")
+----
+
+=== Image
+
+Inline image node with `src`, `alt`, `title`, `width`, `height` attributes.
+
+=== HorizontalRule
+
+Horizontal rule element with `style`, `width`, `thickness` attributes.
+
+=== HardBreak
+
+Inline break element within paragraphs.
+
+== Text Nodes
+
+`Prosereflect::Text` represents a text node with `text` attribute and optional marks. `node_size` returns `text.length + 1`.
+
+== Common Methods
+
+All node types inherit from `Node`:
+
+* `node_size` -- size in the document position space
+* `text?` -- whether this is a text node
+* `cut(from, to)` -- return a copy with content restricted to range
+* `copy(content)` -- return a copy with different content
+* `find_first(type)`, `find_all(type)`, `find_children(klass)` -- node traversal
+* `add_child(node)` -- append a child
+* `text_content` -- combined text of all descendant text nodes
+* `to_h` -- serialize to ProseMirror JSON hash
+* `resolve(pos)` -- resolve a position to a `ResolvedPos`
+* `nodes_between(from, to)` -- iterate nodes in a range
+* `descendants` -- iterate all descendant nodes

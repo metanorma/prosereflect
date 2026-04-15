@@ -1,0 +1,69 @@
+---
+layout: default
+title: HTML Input
+parent: Features
+nav_order: 3
+---
+= HTML Input
+
+`Prosereflect::Input::Html` parses HTML strings into ProseMirror document models using Nokogiri.
+
+== Basic Parsing
+
+[source,ruby]
+----
+require 'prosereflect'
+
+html = '<p>Hello <strong>bold</strong> and <em>italic</em></p>'
+doc = Prosereflect::Input::Html.parse(html)
+
+para = doc.paragraphs.first
+para.text_content  # => "Hello bold and italic"
+----
+
+== Supported Elements
+
+The HTML parser maps standard HTML elements to ProseMirror node types:
+
+[cols="2,2"]
+|===
+| HTML | ProseMirror Type
+
+| `<p>` | paragraph
+| `<h1>` - `<h6>` | heading (with level attr)
+| `<ul>` / `<ol>` | bullet_list / ordered_list
+| `<li>` | list_item
+| `<table>`, `<tr>`, `<td>`, `<th>` | table, table_row, table_cell, table_header
+| `<blockquote>` | blockquote
+| `<pre><code>` | code_block_wrapper / code_block
+| `<img>` | image
+| `<hr>` | horizontal_rule
+| `<br>` | hard_break
+| `<user-mention>` | user
+|===
+
+== Supported Inline Formatting
+
+[cols="2,2"]
+|===
+| HTML | Mark Type
+
+| `<strong>`, `<b>` | bold
+| `<em>`, `<i>` | italic
+| `<code>` | code
+| `<a>` | link (with href)
+| `<s>`, `<del>` | strike
+| `<sub>` | subscript
+| `<sup>` | superscript
+| `<u>` | underline
+|===
+
+== User Mentions
+
+[source,ruby]
+----
+html = '<p>Hello <user-mention data-id="123"></user-mention>!</p>'
+doc = Prosereflect::Input::Html.parse(html)
+users = doc.find_all('user')
+users.first.id  # => "123"
+----

@@ -1,0 +1,66 @@
+---
+layout: default
+title: Step Maps and Mappings
+parent: Advanced
+nav_order: 3
+---
+= Step Maps and Mappings
+
+When steps are applied to a document, positions in the original document may no longer correspond to the same locations. Step maps and mappings track these changes.
+
+== StepMap
+
+`Prosereflect::Transform::StepMap` maps positions through a single step. It stores an array of ranges `[old_start, old_end, new_start, new_end]`.
+
+[source,ruby]
+----
+# Create a step map
+map = Prosereflect::Transform::StepMap.new([[0, 5, 0, 8]])
+
+# Map a position
+map.map(3)  # => new position after the step
+
+# Check if a position was deleted
+map.deleted?(3)  # => true/false
+
+# Map with deletion info
+result = map.map_result(3)
+result.pos       # => new position
+result.deleted   # => whether the position was deleted
+result.transformed  # => whether the position changed
+----
+
+=== Factory Methods
+
+* `StepMap.empty` -- identity map (no changes)
+* `StepMap.delete(from, to)` -- map for a deletion
+* `StepMap.replace(from, to, target_from, target_to)` -- map for a replacement
+
+== Mapping
+
+`Prosereflect::Transform::Mapping` composes multiple step maps to track positions through a full transform chain.
+
+[source,ruby]
+----
+mapping = Prosereflect::Transform::Mapping.new
+mapping.add_map(step_map_1)
+mapping.add_map(step_map_2)
+
+# Map a position through all steps
+mapping.map(5)  # => final position
+
+# Map with deletion tracking
+result = mapping.map_result(5)
+result[:pos]       # => final position
+result[:deleted]   # => whether deleted by any step
+
+# Map backwards
+mapping.map_reverse(8)  # => original position
+----
+
+=== Checking Deletions
+
+[source,ruby]
+----
+mapping.map_deletes(5)  # => whether position 5 was deleted by any step
+----

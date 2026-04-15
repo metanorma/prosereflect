@@ -1,0 +1,95 @@
+---
+layout: default
+title: Schema API
+parent: Reference
+nav_order: 4
+---
+= Schema API
+
+== Prosereflect::Schema
+
+=== Constructor
+
+`Schema.new(nodes_spec:, marks_spec:, top_node: nil)`
+
+[source,ruby]
+----
+schema = Prosereflect::Schema.new(
+  nodes_spec: {
+    "doc" => { content: "block+" },
+    "paragraph" => { content: "inline*", group: "block" },
+    "text" => { group: "inline" }
+  },
+  marks_spec: { "bold" => {}, "italic" => {} }
+)
+----
+
+=== Methods
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `node_type(name)` | Get NodeType by name (raises on unknown)
+| `mark_type(name)` | Get MarkType by name (raises on unknown)
+| `top_node_type` | The top-level NodeType (usually "doc")
+| `node(type, attrs, content, marks)` | Create a validated node
+| `text(text, marks)` | Create a text node
+| `mark(type, attrs)` | Create a mark
+| `node_from_json(json)` | Deserialize node from JSON
+| `mark_from_json(json)` | Deserialize mark from JSON
+|===
+
+== Schema::NodeType
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `name` | Node type name
+| `attrs` | Hash of Attribute definitions
+| `schema` | Parent Schema
+| `content_match` | ContentMatch for valid children
+| `is_block?` | Whether a block node
+| `is_inline?` | Whether an inline node
+| `is_textblock?` | Whether a block with inline content
+| `is_leaf?` | Whether a leaf node (no children)
+| `is_atom?` | Whether atomic (leaf or atom flag)
+| `text?` | Whether text type
+| `in_group?(name)` | Whether in a named group
+| `create(attrs, content, marks)` | Create node (no validation)
+| `create_checked(attrs, content, marks)` | Create with content validation
+| `create_and_fill(attrs, content, marks)` | Create with default content
+| `valid_content?(fragment)` | Check content validity
+| `allows_mark_type?(mark_type)` | Check if mark type is allowed
+|===
+
+== Schema::MarkType
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `name` | Mark type name
+| `rank` | Ordering rank
+| `schema` | Parent Schema
+| `create(attrs)` | Create a Schema::Mark instance
+| `excluded` | Set of excluded mark types
+|===
+
+== Schema::ContentMatch
+
+[cols="1,3"]
+|===
+| Method | Description
+
+| `valid_end` | Whether this is a valid terminal state
+| `match_type(node_type)` | Match a node type, returns next state or nil
+| `match_fragment(fragment)` | Match a full fragment
+| `fill_before(after:, to_end:)` | Compute filler content
+| `find_wrapping(target_type)` | Find wrapping for content
+| `inline_content?` | Whether accepts inline content
+| `default_type` | Default NodeType
+| `edge_count` | Number of edges
+| `edge(n)` | Edge at index
+|===

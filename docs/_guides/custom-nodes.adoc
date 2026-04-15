@@ -1,0 +1,107 @@
+---
+layout: default
+title: Custom Nodes
+parent: Guides
+nav_order: 2
+---
+= Custom Nodes
+
+This guide explains how to define custom node types that integrate with prosereflect's serialization and HTML conversion systems.
+
+== Defining a Custom Node
+
+Create a new class that inherits from `Prosereflect::Node`:
+
+[source,ruby]
+----
+class Callout < Prosereflect::Node
+  PM_TYPE = "callout"
+
+  # Define custom attributes
+  attribute :variant, :string
+
+  # Define serialization mapping
+  key_value do
+    map "type", to: :type, render_default: true
+    map "attrs", to: :attrs
+    map "content", to: :content
+  end
+end
+----
+
+== Key Concepts
+
+=== PM_TYPE
+
+The `PM_TYPE` constant must match the ProseMirror type string used in JSON serialization. This is how the parser maps JSON data to your Ruby class.
+
+=== Attributes
+
+Use `lutaml-model`'s `attribute` DSL to define custom attributes:
+
+[source,ruby]
+----
+attribute :variant, :string   # string attribute
+attribute :count, :integer    # integer attribute
+----
+
+Attributes are automatically included in `to_h` output when present in the `attrs` hash.
+
+=== key_value Block
+
+The `key_value` block defines how Ruby attributes map to JSON keys:
+
+[source,ruby]
+----
+key_value do
+  map "type", to: :type, render_default: true
+  map "attrs", to: :attrs
+  map "content", to: :content
+end
+----
+
+=== Convenience Methods
+
+Add helper methods for construction:
+
+[source,ruby]
+----
+class Callout < Prosereflect::Node
+  PM_TYPE = "callout"
+
+  def self.create(variant: "info", text: nil)
+    node = new(type: PM_TYPE, attrs: { "variant" => variant })
+    node.add_text(text) if text
+    node
+  end
+end
+----
+
+== Serialization Round-Trip
+
+Ensure `to_h` and `Parser` are compatible:
+
+[source,ruby]
+----
+# Serialize
+callout = Callout.create(variant: "warning", text: "Be careful!")
+hash = callout.to_h
+# => {"type" => "callout", "attrs" => {"variant" => "warning"},
+#     "content" => [{"type" => "text", "text" => "Be careful!"}]}
+
+# Deserialize (if registered with Parser)
+doc = Prosereflect::Parser.parse_document({
+  "type" => "doc",
+  "content" => [hash]
+})
+----
+
+== Node Naming Pattern
+
+prosereflect maps PM_TYPE strings to classes by convention:
+
+* `"paragraph"` -> `Prosereflect::Paragraph`
+* `"heading"` -> `Prosereflect::Heading`
+* `"table"` -> `Prosereflect::Table`
+
+Custom types follow the same pattern -- the parser uses `PM_TYPE` to find the matching class.

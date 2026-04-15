@@ -14,6 +14,8 @@ accessing the hierarchical document tree structure represented in ProseMirror's
 JSON/YAML format. This allows for convenient traversal and extraction of content
 from rich text documents.
 
+https://metanorma.org/prosereflect/[Full documentation] is available on the docs site.
+
 
 == Installation
 

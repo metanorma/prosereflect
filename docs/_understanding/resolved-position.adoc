@@ -1,0 +1,53 @@
+---
+layout: default
+title: Resolved Positions
+parent: Understanding
+nav_order: 3
+---
+= Resolved Positions
+
+`Prosereflect::ResolvedPos` represents a document position that has been resolved to a specific location in the document tree. Resolving a position gives you information about the surrounding context.
+
+== Creating a ResolvedPos
+
+[source,ruby]
+----
+doc = Prosereflect::Parser.parse_document(data)
+resolved = doc.resolve(3)
+----
+
+== Properties
+
+* `pos` -- the absolute document position
+* `depth` -- how deep in the tree this position is (0 = root)
+* `parent` -- the parent node at current depth
+* `parent_offset` -- offset within the parent node (`pos - start`)
+
+== Depth-based Access
+
+These methods accept an optional `depth` parameter (default: current depth):
+
+* `node(depth)` -- node at the given depth
+* `index(depth)` -- index within parent at depth
+* `start(depth)` -- start position of node at depth
+* `end_(depth)` -- end position of node at depth
+
+== Boundary Checks
+
+* `block?` -- whether the parent is a block node
+* `inline?` -- whether the parent is an inline node
+* `text_block?` -- whether the parent is a text block
+* `start_of_parent?` -- whether at start of parent
+* `end_of_parent?` -- whether at end of parent
+* `before?` -- whether at the start of the current node
+* `after?` -- whether at the end of the current node
+
+== Comparing Positions
+
+* `shared_depth(other)` -- the deepest depth shared with another position
+* `block_range(other)` -- create a NodeRange between two positions
+
+== Marks
+
+* `marks` -- marks at this position
+* `marks_between(from, to, marks)` -- collect marks between positions

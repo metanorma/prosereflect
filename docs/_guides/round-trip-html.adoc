@@ -1,0 +1,91 @@
+---
+layout: default
+title: HTML Round-Trip
+parent: Guides
+nav_order: 1
+---
+= HTML Round-Trip
+
+This guide shows how to parse HTML into a ProseMirror document model, modify it, and convert back to HTML.
+
+== Parse HTML
+
+[source,ruby]
+----
+require 'prosereflect'
+
+html = '<p>This is <strong>bold</strong> and <em>italic</em> text.</p>'
+doc = Prosereflect::Input::Html.parse(html)
+----
+
+== Navigate and Modify
+
+[source,ruby]
+----
+# Access the first paragraph
+para = doc.paragraphs.first
+para.text_content  # => "This is bold and italic text."
+
+# Append text
+para.add_text(" More content.")
+
+# Add a new paragraph
+doc.add_paragraph("Second paragraph.")
+----
+
+== Convert Back to HTML
+
+[source,ruby]
+----
+modified_html = Prosereflect::Output::Html.convert(doc)
+----
+
+== Working with Tables
+
+[source,ruby]
+----
+html = '<table><tr><th>Header</th></tr><tr><td>Data</td></tr></table>'
+doc = Prosereflect::Input::Html.parse(html)
+
+tables = doc.tables
+first_table = tables.first
+first_table.header_row  # => row with TableHeader cells
+first_table.data_rows   # => rows with TableCell cells
+----
+
+== Round-Trip with Marks
+
+[source,ruby]
+----
+html = '<p><a href="https://example.com">click here</a></p>'
+doc = Prosereflect::Input::Html.parse(html)
+
+# The link mark is preserved
+para = doc.paragraphs.first
+
+# Convert back - links are rendered as <a> tags
+output = Prosereflect::Output::Html.convert(doc)
+----
+
+== Common Patterns
+
+=== Extract Plain Text
+
+[source,ruby]
+----
+doc = Prosereflect::Input::Html.parse(html_content)
+plain_text = doc.text_content
+----
+
+=== Find and Replace Text
+
+[source,ruby]
+----
+doc = Prosereflect::Input::Html.parse(html_content)
+
+doc.paragraphs.each do |para|
+  # Access text content
+  text = para.text_content
+  # Modify via transforms
+end
+----

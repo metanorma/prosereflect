@@ -48,6 +48,10 @@ module Prosereflect
                      HorizontalRule
                    when "image"
                      Image
+                   when "code_block"
+                     CodeBlock
+                   when "code_block_wrapper"
+                     CodeBlockWrapper
                    when "user"
                      User
                    else
@@ -94,6 +98,11 @@ module Prosereflect
           node.scope = attrs["scope"] if attrs["scope"]
           node.abbr = attrs["abbr"] if attrs["abbr"]
           node.colspan = attrs["colspan"] if attrs["colspan"]
+        end
+      when "code_block"
+        if attrs
+          node.language = attrs["language"] if attrs["language"]
+          node.line_numbers = attrs["line_numbers"] if attrs["line_numbers"]
         end
       end
 
