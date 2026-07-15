@@ -68,4 +68,31 @@ RSpec.describe "Transform steps rebuild documents with node content" do # ruboco
 
     it_behaves_like "a step yielding node content"
   end
+
+  # Node#replace rebuilds ancestors through copy, whose new_attrs defaults to the
+  # original's attrs. That object is passed to the constructor, but lutaml-model
+  # copies it on assignment, so the rebuilt tree does not share mutable attrs
+  # state with the source document.
+  describe "attrs isolation between the source and rebuilt trees" do
+    let(:doc) { build_doc(text: "ab", attrs: { "align" => "left" }) }
+    let(:rebuilt) { doc.replace(2, 3, [Prosereflect::Text.new(text: "X")]) }
+
+    it "does not share the attrs hash" do
+      expect(rebuilt.content.first.attrs).not_to be(doc.content.first.attrs)
+    end
+
+    it "does not leak a mutation of the rebuilt tree back to the source" do
+      rebuilt.content.first.attrs["align"] = "center"
+
+      expect(doc.content.first.attrs["align"]).to eq("left")
+    end
+
+    it "does not share nested attrs values" do
+      nested = build_doc(text: "ab", attrs: { "style" => { "color" => "red" } })
+      copy = nested.replace(2, 3, [Prosereflect::Text.new(text: "X")])
+      copy.content.first.attrs["style"]["color"] = "blue"
+
+      expect(nested.content.first.attrs["style"]["color"]).to eq("red")
+    end
+  end
 end

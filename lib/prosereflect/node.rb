@@ -253,8 +253,15 @@ module Prosereflect
     # Replace the range [from, to) with the given nodes, returning a new node.
     #
     # Positions are local to this node: its own token sits at 0 and its children
-    # begin at offset 1. An element child's token sits at its start; a text
-    # child's characters occupy [start, start + text.length).
+    # begin at offset 1. An element child's token sits at its start.
+    #
+    # A text child needs care, because its characters and its span differ. Its
+    # characters occupy [start, start + text.length), but its node_size is
+    # text.length + 1, so it spans [start, start + text.length + 1). The extra
+    # position is the caret after the final character, at start + text.length;
+    # the next sibling begins one past that. This gap between "last character"
+    # and "end of span" is the source of most off-by-one errors in here.
+    # For "Hello" at start 2: characters 2..6, carets 2..7, next sibling at 8.
     def replace(from, to, nodes = [])
       index, child_start = child_to_descend_into(from, to, nodes)
       return splice(from, to, nodes) unless index
