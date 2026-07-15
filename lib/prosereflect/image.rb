@@ -41,6 +41,14 @@ module Prosereflect
       new(attrs: attrs)
     end
 
+    def leaf?
+      true
+    end
+
+    def inline?
+      true
+    end
+
     # Update the image source URL
     def src=(src_url)
       @src = src_url

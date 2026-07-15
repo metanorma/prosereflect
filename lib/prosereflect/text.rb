@@ -33,6 +33,10 @@ module Prosereflect
       true
     end
 
+    def inline?
+      true
+    end
+
     # Return a copy of this text node with content restricted to range
     def cut(from = 0, to = nil)
       txt = text || ""

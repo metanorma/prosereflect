@@ -17,6 +17,14 @@ module Prosereflect
       new(marks: marks)
     end
 
+    def leaf?
+      true
+    end
+
+    def inline?
+      true
+    end
+
     def text_content
       "\n"
     end

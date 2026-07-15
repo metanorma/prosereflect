@@ -221,6 +221,21 @@ module Prosereflect
       false
     end
 
+    # Whether this node can never hold content. A leaf occupies a position but
+    # has no interior, so a range may never resolve inside one.
+    # Overridden to true in HardBreak, Image, HorizontalRule and User.
+    def leaf?
+      false
+    end
+
+    # Whether this node lives inside a block rather than beside one. Note this
+    # is not the inverse of leaf?: HardBreak and Image are inline leaves, while
+    # HorizontalRule is a block leaf.
+    # Overridden to true in Text, HardBreak, Image and User.
+    def inline?
+      false
+    end
+
     # Return a copy of this node with content restricted to the given range.
     # Positions are relative to the start of this node's content.
     def cut(from = 0, to = nil)
@@ -233,6 +248,19 @@ module Prosereflect
       else
         copy(cut_content(from, to))
       end
+    end
+
+    # Replace the range [from, to) with the given nodes, returning a new node.
+    #
+    # Positions are local to this node: its own token sits at 0 and its children
+    # begin at offset 1. An element child's token sits at its start; a text
+    # child's characters occupy [start, start + text.length).
+    def replace(from, to, nodes = [])
+      index, child_start = child_to_descend_into(from, to, nodes)
+      return splice(from, to, nodes) unless index
+
+      child = content[index].replace(from - child_start, to - child_start, nodes)
+      copy(content.each_with_index.map { |node, i| i == index ? child : node })
     end
 
     # Iterate over all nodes between two positions in this node.
@@ -275,8 +303,8 @@ module Prosereflect
     end
 
     # Create a copy of this node with different content.
-    def copy(new_content = nil)
-      new_node = self.class.new(type: type, attrs: attrs, marks: raw_marks)
+    def copy(new_content = nil, new_attrs = attrs)
+      new_node = self.class.new(type: type, attrs: new_attrs, marks: raw_marks)
       case new_content
       when nil
         # no content
@@ -309,6 +337,104 @@ module Prosereflect
     end
 
     private
+
+    # Yields each child with its local start and end offsets.
+    def each_child_span
+      pos = 1
+      (content || []).each_with_index do |child, index|
+        child_end = pos + child.node_size
+        yield child, index, pos, child_end
+        pos = child_end
+      end
+    end
+
+    # [index, start] of the child the range resolves inside, or nil to splice at
+    # this level. Text and leaf children have no interior to descend into: a
+    # position just past a leaf's token belongs after it, not inside it.
+    def child_to_descend_into(from, to, nodes)
+      each_child_span do |child, index, child_start, child_end|
+        next if child.text? || child.leaf?
+        next unless from >= child_start + 1 && to <= child_end
+        next if from == child_end && !inline_insertion?(from, to, nodes)
+
+        return [index, child_start]
+      end
+      nil
+    end
+
+    # This model gives a node no closing token, so a position at child_end is
+    # both the end of that child's content and the start of its next sibling.
+    # Inline content has nowhere valid to live out here among block siblings,
+    # so it resolves inward; block content resolves outward as a sibling.
+    def inline_insertion?(from, to, nodes)
+      from == to && nodes.any? && nodes.all?(&:inline?)
+    end
+
+    # Rebuild this node's children around the replaced range. Children wholly
+    # outside the range are carried across untouched; only the trimmed edges and
+    # the inserted nodes meet, so only they are merged. Coalescing untouched
+    # siblings would silently change this node's size, and every position after
+    # it, for an edit that never reached them.
+    def splice(from, to, nodes)
+      kept_before = []
+      kept_after = []
+      heads = []
+      tails = []
+
+      each_child_span do |child, _index, child_start, child_end|
+        if child_end <= from
+          kept_before << child
+        elsif child_start >= to
+          kept_after << child
+        else
+          heads << head_of(child, from, child_start) if from > child_start
+          tails << tail_of(child, to, child_start) if to < child_end
+        end
+      end
+
+      spliced = merge_adjacent_text(heads + nodes.to_a + tails)
+      copy(kept_before + spliced + kept_after)
+    end
+
+    # The part of a straddling child that survives before `from`.
+    def head_of(child, from, child_start)
+      offset = from - child_start
+      return child.cut(0, offset) if child.text?
+
+      child.replace(offset, child.node_size, [])
+    end
+
+    # The part of a straddling child that survives from `to` onward.
+    def tail_of(child, to, child_start)
+      offset = to - child_start
+      return child.cut(offset) if child.text?
+
+      child.replace(1, offset, [])
+    end
+
+    # Drops empty text (a trimmed edge cut to "") and joins same-mark text into
+    # one node. Applied only to the spliced run -- see splice for why untouched
+    # children are deliberately left unmerged.
+    def merge_adjacent_text(nodes)
+      nodes.reject { |node| node.text? && node.text_content.empty? }
+        .each_with_object([]) do |node, result|
+          previous = result.last
+          if mergeable_text?(previous, node)
+            result[-1] = previous.class.new(text: previous.text + node.text,
+                                            marks: previous.raw_marks)
+          else
+            result << node
+          end
+        end
+    end
+
+    # Compares serialized marks, since unmarked text is represented as both nil
+    # and [] and the two must not be treated as different marks.
+    def mergeable_text?(previous, node)
+      return false unless previous&.text? && node.text?
+
+      (previous.marks || []) == (node.marks || [])
+    end
 
     def cut_content(from, to)
       return [] unless content
