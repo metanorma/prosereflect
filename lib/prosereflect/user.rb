@@ -47,6 +47,14 @@ module Prosereflect
       raise NotImplementedError, "User mention nodes cannot have children"
     end
 
+    def leaf?
+      true
+    end
+
+    def inline?
+      true
+    end
+
     def content
       []
     end

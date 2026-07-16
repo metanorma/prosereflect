@@ -20,10 +20,9 @@ module Prosereflect
         return Result.fail("Invalid positions") if @from > @to
         return Result.fail("from < 0") if @from.negative?
         return Result.fail("to > doc size") if @to > doc.node_size
+        return Result.fail("Slice open boundaries are not supported") if open_boundaries?
 
-        # Build the new document
-        new_doc = apply_replace(doc)
-        Result.ok(new_doc)
+        Result.ok(doc.replace(@from, @to, @slice.content.to_a))
       rescue StandardError => e
         Result.fail(e.message)
       end
@@ -34,8 +33,9 @@ module Prosereflect
       end
 
       def invert(doc)
-        # Find what was removed
-        removed = content_between(doc, @from, @to)
+        # Find what was removed. Wrapped in a Slice because a step's slice is a
+        # Slice, not a Fragment: apply reads open_start/open_end off it.
+        removed = Slice.new(content_between(doc, @from, @to))
         ReplaceStep.new(@from, @from + @slice.size, removed)
       end
 
@@ -107,30 +107,12 @@ module Prosereflect
 
       private
 
-      def apply_replace(doc)
-        # Get content before, during, and after the replaced range
-        before = content_before(doc, @from)
-        after = content_after(doc, @to)
+      # Open depths describe how the slice's content joins at its boundaries, so
+      # they are inert when there is no content to join.
+      def open_boundaries?
+        return false if @slice.content.empty?
 
-        # Build new document
-        new_content = []
-        new_content.concat(before) unless before.empty?
-        new_content.concat(@slice.content.to_a) unless @slice.empty?
-        new_content.concat(after) unless after.empty?
-
-        rebuild_doc(doc, new_content)
-      end
-
-      def content_before(doc, pos)
-        result = []
-        doc.nodes_between(0, pos) { |node| result << node }
-        result
-      end
-
-      def content_after(doc, pos)
-        result = []
-        doc.nodes_between(pos, doc.node_size) { |node| result << node }
-        result
+        !@slice.open_start.zero? || !@slice.open_end.zero?
       end
 
       def content_between(doc, from, to)
@@ -142,15 +124,6 @@ module Prosereflect
       def join_slices(left, right)
         new_content = Fragment.new(left.content.to_a + right.content.to_a)
         Slice.new(new_content, left.open_start, right.open_end)
-      end
-
-      def rebuild_doc(doc, new_content)
-        # Create a new document with the same structure but new content
-        attrs = doc.attrs.dup
-        Fragment.new(new_content)
-        # For simplicity, return a new Document with the new content
-        # In reality this would preserve the doc type
-        doc.class.new(content: Fragment.new(new_content), attrs: attrs)
       end
     end
   end

@@ -173,8 +173,7 @@ module Prosereflect
       end
 
       def rebuild_doc(doc, new_content)
-        attrs = doc.attrs.dup
-        doc.class.new(content: Fragment.new(new_content), attrs: attrs)
+        doc.copy(new_content, doc.attrs.dup)
       end
     end
   end

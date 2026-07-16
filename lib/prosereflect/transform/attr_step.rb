@@ -69,7 +69,7 @@ module Prosereflect
 
       def replace_node_with_new_attrs(doc, target_node, new_attrs)
         new_content = doc.content.to_a.map { |node| replace_node(node, target_node, new_attrs) }
-        doc.class.new(content: Fragment.new(new_content), attrs: doc.attrs.dup)
+        doc.copy(new_content, doc.attrs.dup)
       end
 
       def replace_node(node, target_node, new_attrs)

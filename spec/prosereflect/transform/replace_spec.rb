@@ -36,6 +36,17 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
         expect(result).to be_ok
         expect(result.doc).to be_a(Prosereflect::Document)
+        expect(result.doc.text_content).to eq("Ho")
+      end
+
+      it "keeps the deleted text in a single text node" do
+        doc = build_doc_with_text("Hello")
+        step = Prosereflect::Transform::ReplaceStep.new(3, 6, Prosereflect::Transform::Slice.empty)
+        result = step.apply(doc)
+
+        paragraph = result.doc.content.first
+        expect(paragraph).to be_a(Prosereflect::Paragraph)
+        expect(paragraph.content.map(&:text)).to eq(["Ho"])
       end
 
       it "deletes at the start of the document" do
@@ -45,6 +56,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("c")
       end
 
       it "deletes at the end of the document" do
@@ -54,6 +66,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("a")
       end
 
       it "deletes an entire paragraph" do
@@ -86,6 +99,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("HXYo")
       end
 
       it "replaces a single character" do
@@ -110,6 +124,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("XYZb")
         # New doc should be larger
         expect(result.doc.node_size).to be > doc.node_size
       end
@@ -124,6 +139,8 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("aZf")
+        expect(result.doc.node_size).to be < doc.node_size
       end
     end
 
@@ -138,6 +155,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("abc")
         expect(result.doc.node_size).to be > doc.node_size
       end
 
@@ -151,6 +169,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("abcd")
       end
 
       it "inserts at the end of a paragraph" do
@@ -164,6 +183,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("abcd")
       end
     end
 
@@ -182,6 +202,22 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("XY")
+      end
+
+      it "merges adjacent replacement text nodes into one node" do
+        doc = build_doc_with_text("Hello")
+        replacement = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new(
+            [Prosereflect::Text.new(text: "X"), Prosereflect::Text.new(text: "Y")],
+          ),
+        )
+        step = Prosereflect::Transform::ReplaceStep.new(2, 7, replacement)
+        result = step.apply(doc)
+
+        # Each text node adds +1 to node_size, so leaving these unmerged would
+        # corrupt every downstream position.
+        expect(result.doc.content.first.content.map(&:text)).to eq(["XY"])
       end
 
       it "replaces with an empty slice that has open boundaries" do
@@ -194,7 +230,24 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         step = Prosereflect::Transform::ReplaceStep.new(2, 5, slice)
         result = step.apply(doc)
 
+        # Open depths describe how slice *content* joins; with no content they
+        # are inert, so this is a plain deletion.
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("")
+      end
+
+      it "rejects a slice whose open boundaries would affect the result" do
+        doc = build_doc_with_text("abc")
+        slice = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::Text.new(text: "z")]),
+          1,
+          0,
+        )
+        step = Prosereflect::Transform::ReplaceStep.new(2, 5, slice)
+        result = step.apply(doc)
+
+        expect(result).not_to be_ok
+        expect(result.failed).to match(/open/i)
       end
 
       it "replaces a paragraph with a slice containing a paragraph" do
@@ -209,6 +262,244 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+      end
+    end
+
+    context "with leaf nodes" do
+      # A leaf occupies a position but has no interior, so a caret just past its
+      # token belongs after it. Descending into one produces e.g. a hard_break
+      # containing text, and the inserted text disappears from text_content.
+      it "inserts after a hard_break rather than inside it" do
+        doc = Prosereflect::Parser.parse_document(
+          "type" => "doc",
+          "content" => [
+            { "type" => "paragraph",
+              "content" => [{ "type" => "hard_break" }, { "type" => "text", "text" => "a" }] },
+          ],
+        )
+        insert = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::Text.new(text: "X")]),
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(3, 3, insert).apply(doc)
+
+        expect(result).to be_ok
+        # Text#content is nil too, so asserting only text_content and a nil first
+        # child would pass for [text("X"), text("a")] -- assert the break itself
+        # and the text order. "a" lies wholly after the insertion point, so it is
+        # untouched and "X" abuts it rather than coalescing.
+        children = result.doc.content.first.content
+        expect(children.map(&:type)).to eq(%w[hard_break text text])
+        expect(children.drop(1).map(&:text)).to eq(%w[X a])
+        expect(children.first.content).to be_nil
+      end
+
+      it "inserts after a user mention rather than inside it" do
+        doc = Prosereflect::Parser.parse_document(
+          "type" => "doc",
+          "content" => [
+            { "type" => "paragraph",
+              "content" => [{ "type" => "user", "attrs" => { "id" => "u1" } },
+                            { "type" => "text", "text" => "a" }] },
+          ],
+        )
+        insert = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::Text.new(text: "X")]),
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(3, 3, insert).apply(doc)
+
+        expect(result).to be_ok
+        # User#text_content is empty and both inserts are type "text", so neither
+        # text_content nor the type list can tell where "X" landed. Assert the
+        # actual text order, and that the mention took no children.
+        children = result.doc.content.first.content
+        expect(children.map(&:type)).to eq(%w[user text text])
+        expect(children.drop(1).map(&:text)).to eq(%w[X a])
+        expect(children.first.content).to eq([])
+      end
+    end
+
+    context "when inserting an empty text node" do
+      # An empty text node is not representable content -- ProseMirror's
+      # schema.text("") throws -- and with no characters there is nothing for its
+      # marks to apply to. Dropping it is canonical normalisation, so the step
+      # succeeds and the document is untouched.
+      it "is a no-op that leaves the document unchanged" do
+        doc = build_doc_with_text("ab")
+        slice = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new(
+            [Prosereflect::Text.new(text: "", marks: [{ "type" => "bold" }])],
+          ),
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(3, 3, slice).apply(doc)
+
+        expect(result).to be_ok
+        expect(result.doc.to_h).to eq(doc.to_h)
+      end
+    end
+
+    # KNOWN LIMITATION, asserted so it cannot pass unnoticed: replace is not
+    # schema-aware. A plain Node carries no NodeType, so replace cannot know what
+    # a parent may contain and places content wherever the position resolves. The
+    # inward/outward tie-break is right for Document, where blocks are valid
+    # siblings, and cannot know it is wrong inside a list. Fixing this means
+    # consulting lib/prosereflect/schema; see docs/plans/fix-replace-step.md.
+    # Asserts today's behaviour, NOT the desired behaviour.
+    context "when inserting a block into a list" do
+      it "places the block as an invalid sibling of the list items" do
+        doc = Prosereflect::Document.create
+        list = doc.add_bullet_list
+        list.add_item("a")
+        list.add_item("b")
+
+        para = Prosereflect::Paragraph.create
+        para.add_text("X")
+        slice = Prosereflect::Transform::Slice.new(Prosereflect::Fragment.new([para]))
+        result = Prosereflect::Transform::ReplaceStep.new(6, 6, slice).apply(doc)
+
+        expect(result).to be_ok
+        # bullet_list accepts only list_item; a paragraph here is schema-invalid.
+        expect(result.doc.content.first.content.map(&:type))
+          .to eq(%w[list_item paragraph list_item])
+      end
+    end
+
+    context "when children lie outside the replaced range" do
+      it "leaves untouched sibling text nodes alone" do
+        doc = Prosereflect::Parser.parse_document(
+          "type" => "doc",
+          "content" => [
+            { "type" => "paragraph",
+              "content" => [{ "type" => "text", "text" => "a" },
+                            { "type" => "text", "text" => "b" },
+                            { "type" => "text", "text" => "Z" }] },
+          ],
+        )
+        replacement = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::Text.new(text: "Q")]),
+        )
+        # Replace "b" only. Coalescing "a"/"Z" into it would shift node_size by
+        # -2 for an edit whose delta is 0, moving every position after it.
+        result = Prosereflect::Transform::ReplaceStep.new(4, 5, replacement).apply(doc)
+
+        expect(result.doc.content.first.content.map(&:text)).to eq(%w[a Q Z])
+        expect(result.doc.node_size).to eq(doc.node_size)
+      end
+    end
+
+    context "when inserting at a child boundary" do
+      # This model gives a node no closing token, so a position at a child's end
+      # is ambiguous: both the end of that child's content and the start of its
+      # next sibling. Inline content resolves inward (it has nowhere valid to
+      # live among block siblings); block content resolves outward.
+      def inline_slice(text)
+        Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::Text.new(text: text)]),
+        )
+      end
+
+      it "inserts text into an empty paragraph rather than beside it" do
+        doc = Prosereflect::Parser.parse_document(
+          "type" => "doc", "content" => [{ "type" => "paragraph" }],
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(2, 2, inline_slice("X")).apply(doc)
+
+        expect(result).to be_ok
+        expect(result.doc.content.length).to eq(1)
+        expect(result.doc.content.first.content.map(&:text)).to eq(["X"])
+      end
+
+      it "inserts text after a trailing hard_break rather than beside the paragraph" do
+        doc = Prosereflect::Parser.parse_document(
+          "type" => "doc",
+          "content" => [{ "type" => "paragraph", "content" => [{ "type" => "hard_break" }] }],
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(3, 3, inline_slice("X")).apply(doc)
+
+        expect(result).to be_ok
+        expect(result.doc.content.length).to eq(1)
+        expect(result.doc.content.first.content.map(&:type)).to eq(%w[hard_break text])
+      end
+
+      # Inline atoms are leaves but still inline, so they resolve inward like
+      # text. HorizontalRule is a leaf too, but a block one, so it stays outward.
+      it "inserts an inline atom into the paragraph rather than beside it" do
+        doc = build_doc_with_text("abc")
+        # para spans [1,6), so 6 is the boundary
+        insert = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::HardBreak.new]),
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(6, 6, insert).apply(doc)
+
+        expect(result).to be_ok
+        expect(result.doc.content.map(&:type)).to eq(["paragraph"])
+        expect(result.doc.content.first.content.map(&:type)).to eq(%w[text hard_break])
+      end
+
+      it "keeps a horizontal_rule beside the paragraph as a block leaf" do
+        doc = build_doc_with_text("abc")
+        insert = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::HorizontalRule.new]),
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(6, 6, insert).apply(doc)
+
+        expect(result.doc.content.map(&:type)).to eq(%w[paragraph horizontal_rule])
+      end
+
+      it "appends text to the preceding paragraph at a block boundary" do
+        doc = build_doc_with_paragraphs("abc", "def")
+        result = Prosereflect::Transform::ReplaceStep.new(6, 6, inline_slice("X")).apply(doc)
+
+        expect(result.doc.text_content).to eq("abcX\ndef")
+        # "abc" is wholly outside the range, so it is carried across untouched
+        # and the insert abuts it rather than coalescing into it.
+        expect(result.doc.content.map { |node| node.content.map(&:text) })
+          .to eq([%w[abc X], ["def"]])
+      end
+
+      it "inserts a paragraph between two paragraphs rather than nesting it" do
+        doc = build_doc_with_paragraphs("abc", "def")
+        # para1 spans [1,6), para2 spans [6,11)
+        para = Prosereflect::Paragraph.new(type: "paragraph")
+        para.add_text("X")
+        insert = Prosereflect::Transform::Slice.new(Prosereflect::Fragment.new([para]))
+        result = Prosereflect::Transform::ReplaceStep.new(6, 6, insert).apply(doc)
+
+        expect(result).to be_ok
+        expect(result.doc.content.map { |node| node.content.map(&:text) })
+          .to eq([["abc"], ["X"], ["def"]])
+      end
+    end
+
+    context "when text carries marks" do
+      it "merges replacement text into unmarked text regardless of nil/empty marks" do
+        doc = Prosereflect::Parser.parse_document(
+          "type" => "doc",
+          "content" => [
+            { "type" => "paragraph",
+              "content" => [{ "type" => "text", "text" => "ab", "marks" => [] }] },
+          ],
+        )
+        insert = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::Text.new(text: "X")]),
+        )
+        result = Prosereflect::Transform::ReplaceStep.new(2, 3, insert).apply(doc)
+
+        expect(result.doc.content.first.content.map(&:text)).to eq(["Xb"])
+      end
+
+      it "does not merge text carrying different marks" do
+        doc = Prosereflect::Parser.parse_document(
+          "type" => "doc",
+          "content" => [
+            { "type" => "paragraph",
+              "content" => [{ "type" => "text", "text" => "ab" }] },
+          ],
+        )
+        bold = Prosereflect::Text.new(text: "X", marks: [{ "type" => "bold" }])
+        insert = Prosereflect::Transform::Slice.new(Prosereflect::Fragment.new([bold]))
+        result = Prosereflect::Transform::ReplaceStep.new(2, 3, insert).apply(doc)
+
+        expect(result.doc.content.first.content.map(&:text)).to eq(%w[X b])
       end
     end
 
@@ -292,9 +583,37 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
       expect(inverted.from).to eq(3)
       expect(inverted.to).to eq(5)
       # The inverted step's slice is the content that was at positions 3-3 (empty)
-      # Note: invert returns a Fragment, not a Slice, due to content_between
-      expect(inverted.slice).to be_a(Prosereflect::Fragment)
+      expect(inverted.slice).to be_a(Prosereflect::Transform::Slice)
       expect(inverted.slice.empty?).to be true
+    end
+
+    it "produces an inverse whose slice apply can read" do
+      doc = build_doc_with_text("Hello")
+      step = Prosereflect::Transform::ReplaceStep.new(3, 6, Prosereflect::Transform::Slice.empty)
+      deleted = step.apply(doc)
+      expect(deleted.doc.text_content).to eq("Ho")
+
+      # An inverse whose slice is a bare Fragment fails in apply, which reads
+      # open_start/open_end off the slice.
+      expect(step.invert(doc).apply(deleted.doc)).to be_ok
+    end
+
+    # KNOWN LIMITATION, asserted so it cannot pass unnoticed: an inverse does NOT
+    # round-trip. content_between collects whole visited nodes via nodes_between
+    # (which yields at every depth) rather than cutting the removed range, so the
+    # inverse of deleting "ell" carries the entire Paragraph("Hello") and
+    # re-applying it nests a paragraph inside a paragraph. Capturing the removed
+    # range properly needs the same slice/open-depth machinery that is out of
+    # scope here (see docs/plans/fix-replace-step.md). Asserting today's
+    # behaviour, NOT the desired behaviour.
+    it "does not round-trip: the inverse re-inserts whole visited nodes" do
+      doc = build_doc_with_text("Hello")
+      step = Prosereflect::Transform::ReplaceStep.new(3, 6, Prosereflect::Transform::Slice.empty)
+      deleted = step.apply(doc)
+      restored = step.invert(doc).apply(deleted.doc)
+
+      expect(restored.doc.text_content).to eq("HHelloo")
+      expect(restored.doc.text_content).not_to eq(doc.text_content)
     end
 
     it "produces a step that reverses a replacement" do
@@ -705,6 +1024,10 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
       end
     end
 
+    # A cross-block range trims each block but does NOT merge the surviving
+    # blocks into one. Joining is what a slice's open_start/open_end depths
+    # drive, and those are not implemented (see docs/plans/fix-replace-step.md).
+    # ProseMirror would collapse these into a single paragraph.
     context "when replacing across node boundaries" do
       it "deletes content spanning two paragraphs" do
         doc = build_doc_with_paragraphs("ab", "cd")
@@ -716,6 +1039,17 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.content.map { |para| para.content.map(&:text) }).to eq([["a"], ["d"]])
+      end
+
+      it "leaves the two paragraphs unjoined rather than merging them" do
+        doc = build_doc_with_paragraphs("ab", "cd")
+        step = Prosereflect::Transform::ReplaceStep.new(3, 7, Prosereflect::Transform::Slice.empty)
+        result = step.apply(doc)
+
+        # Documents current behaviour, not desired ProseMirror parity: a join
+        # would yield a single paragraph "ad".
+        expect(result.doc.content.length).to eq(2)
       end
 
       it "replaces content spanning two paragraphs with new content" do
@@ -727,6 +1061,30 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+      end
+
+      # KNOWN LIMITATION, asserted so it cannot pass unnoticed: an inline slice
+      # replacing a cross-block range is spliced at the doc level, producing a
+      # text node as a sibling of paragraphs -- which is not a valid ProseMirror
+      # document (text may only live inside a block). Placing it correctly needs
+      # the open-depth fitting that is out of scope here; see the plan. This
+      # asserts today's behaviour, NOT the desired behaviour.
+      it "splices an inline slice at doc level across a block boundary (invalid doc)" do
+        doc = build_doc_with_paragraphs("ab", "cd")
+        replacement = Prosereflect::Transform::Slice.new(
+          Prosereflect::Fragment.new([Prosereflect::Text.new(text: "XY")]),
+        )
+        step = Prosereflect::Transform::ReplaceStep.new(3, 7, replacement)
+        result = step.apply(doc)
+
+        expect(result.doc.to_h).to eq(
+          { "type" => "doc",
+            "content" => [
+              { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "a" }] },
+              { "type" => "text", "text" => "XY" },
+              { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "d" }] },
+            ] },
+        )
       end
     end
 

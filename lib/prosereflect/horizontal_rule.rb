@@ -28,6 +28,10 @@ module Prosereflect
       new(attrs: attrs)
     end
 
+    def leaf?
+      true
+    end
+
     def style=(value)
       @style = value
       self.attrs ||= {}

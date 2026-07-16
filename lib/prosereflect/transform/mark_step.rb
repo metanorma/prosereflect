@@ -68,7 +68,7 @@ module Prosereflect
 
       def add_mark_to_range(doc)
         new_content = doc.content.map { |node| apply_mark_to_node(node) }
-        doc.class.new(content: Fragment.new(new_content), attrs: doc.attrs.dup)
+        doc.copy(new_content, doc.attrs.dup)
       end
 
       def apply_mark_to_node(node)
@@ -83,7 +83,7 @@ module Prosereflect
 
       def remove_mark_from_range(doc)
         new_content = doc.content.map { |node| remove_mark_from_node_single(node) }
-        doc.class.new(content: Fragment.new(new_content), attrs: doc.attrs.dup)
+        doc.copy(new_content, doc.attrs.dup)
       end
 
       def remove_mark_from_node_single(node)
@@ -191,7 +191,7 @@ module Prosereflect
 
       def add_mark_to_node(doc)
         new_content = doc.content.map { |node| add_mark_to_single_node(node) }
-        doc.class.new(content: Fragment.new(new_content), attrs: doc.attrs.dup)
+        doc.copy(new_content, doc.attrs.dup)
       end
 
       def add_mark_to_single_node(node)
@@ -253,7 +253,7 @@ module Prosereflect
 
       def remove_mark_from_node(doc)
         new_content = doc.content.map { |node| remove_mark_from_single_node(node) }
-        doc.class.new(content: Fragment.new(new_content), attrs: doc.attrs.dup)
+        doc.copy(new_content, doc.attrs.dup)
       end
 
       def remove_mark_from_single_node(node)
