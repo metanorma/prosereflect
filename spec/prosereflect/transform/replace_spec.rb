@@ -23,7 +23,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
     )
   end
 
-  # doc=1 + para=1 + text("Hello")=6 = 8 total
+  # doc=1 + para=1 + text("Hello")=5 = 7 total
   # Positions: 0=doc start, 1=para start, 2="H", 3="e", 4="l", 5="l", 6="o", 7=para end
 
   describe "#apply" do
@@ -71,12 +71,13 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
       it "deletes an entire paragraph" do
         doc = build_doc_with_text("abc")
-        # doc=1, para=1, text("abc")=4, total=6
+        # doc=1, para=1, text("abc")=3, total=5
         # Delete entire paragraph range (1-5)
         step = Prosereflect::Transform::ReplaceStep.new(1, 5, Prosereflect::Transform::Slice.empty)
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.content).to be_empty
       end
 
       it "deletes from start of document to end" do
@@ -112,6 +113,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("aXc")
       end
 
       it "replaces text with longer content" do
@@ -174,7 +176,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
       it "inserts at the end of a paragraph" do
         doc = build_doc_with_text("ab")
-        # doc=1, para=1, text("ab")=3, total=5
+        # doc=1, para=1, text("ab")=2, total=4
         insert = Prosereflect::Transform::Slice.new(
           Prosereflect::Fragment.new([Prosereflect::Text.new(text: "cd")]),
         )
@@ -215,8 +217,8 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         step = Prosereflect::Transform::ReplaceStep.new(2, 7, replacement)
         result = step.apply(doc)
 
-        # Each text node adds +1 to node_size, so leaving these unmerged would
-        # corrupt every downstream position.
+        # Adjacent text nodes with identical marks are normalized into one node,
+        # so the spliced-in "X"/"Y" collapse to "XY".
         expect(result.doc.content.first.content.map(&:text)).to eq(["XY"])
       end
 
@@ -262,6 +264,8 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.content.map(&:type)).to eq(%w[paragraph])
+        expect(result.doc.text_content).to eq("new")
       end
     end
 
@@ -354,7 +358,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         para = Prosereflect::Paragraph.create
         para.add_text("X")
         slice = Prosereflect::Transform::Slice.new(Prosereflect::Fragment.new([para]))
-        result = Prosereflect::Transform::ReplaceStep.new(6, 6, slice).apply(doc)
+        result = Prosereflect::Transform::ReplaceStep.new(5, 5, slice).apply(doc)
 
         expect(result).to be_ok
         # bullet_list accepts only list_item; a paragraph here is schema-invalid.
@@ -377,9 +381,9 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         replacement = Prosereflect::Transform::Slice.new(
           Prosereflect::Fragment.new([Prosereflect::Text.new(text: "Q")]),
         )
-        # Replace "b" only. Coalescing "a"/"Z" into it would shift node_size by
-        # -2 for an edit whose delta is 0, moving every position after it.
-        result = Prosereflect::Transform::ReplaceStep.new(4, 5, replacement).apply(doc)
+        # Replace "b" only. "a" and "Z" lie outside the range, so splice carries
+        # them across untouched rather than coalescing them into the replacement.
+        result = Prosereflect::Transform::ReplaceStep.new(3, 4, replacement).apply(doc)
 
         expect(result.doc.content.first.content.map(&:text)).to eq(%w[a Q Z])
         expect(result.doc.node_size).to eq(doc.node_size)
@@ -424,11 +428,11 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
       # text. HorizontalRule is a leaf too, but a block one, so it stays outward.
       it "inserts an inline atom into the paragraph rather than beside it" do
         doc = build_doc_with_text("abc")
-        # para spans [1,6), so 6 is the boundary
+        # para spans [1,5), so 5 is the boundary
         insert = Prosereflect::Transform::Slice.new(
           Prosereflect::Fragment.new([Prosereflect::HardBreak.new]),
         )
-        result = Prosereflect::Transform::ReplaceStep.new(6, 6, insert).apply(doc)
+        result = Prosereflect::Transform::ReplaceStep.new(5, 5, insert).apply(doc)
 
         expect(result).to be_ok
         expect(result.doc.content.map(&:type)).to eq(["paragraph"])
@@ -440,14 +444,14 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         insert = Prosereflect::Transform::Slice.new(
           Prosereflect::Fragment.new([Prosereflect::HorizontalRule.new]),
         )
-        result = Prosereflect::Transform::ReplaceStep.new(6, 6, insert).apply(doc)
+        result = Prosereflect::Transform::ReplaceStep.new(5, 5, insert).apply(doc)
 
         expect(result.doc.content.map(&:type)).to eq(%w[paragraph horizontal_rule])
       end
 
       it "appends text to the preceding paragraph at a block boundary" do
         doc = build_doc_with_paragraphs("abc", "def")
-        result = Prosereflect::Transform::ReplaceStep.new(6, 6, inline_slice("X")).apply(doc)
+        result = Prosereflect::Transform::ReplaceStep.new(5, 5, inline_slice("X")).apply(doc)
 
         expect(result.doc.text_content).to eq("abcX\ndef")
         # "abc" is wholly outside the range, so it is carried across untouched
@@ -458,11 +462,11 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
       it "inserts a paragraph between two paragraphs rather than nesting it" do
         doc = build_doc_with_paragraphs("abc", "def")
-        # para1 spans [1,6), para2 spans [6,11)
+        # para1 spans [1,5), para2 spans [5,9)
         para = Prosereflect::Paragraph.new(type: "paragraph")
         para.add_text("X")
         insert = Prosereflect::Transform::Slice.new(Prosereflect::Fragment.new([para]))
-        result = Prosereflect::Transform::ReplaceStep.new(6, 6, insert).apply(doc)
+        result = Prosereflect::Transform::ReplaceStep.new(5, 5, insert).apply(doc)
 
         expect(result).to be_ok
         expect(result.doc.content.map { |node| node.content.map(&:text) })
@@ -524,7 +528,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
       it "fails when to exceeds document size" do
         doc = build_doc_with_text("abc")
-        # doc.node_size = 6
+        # doc.node_size = 5
         step = Prosereflect::Transform::ReplaceStep.new(2, 100, Prosereflect::Transform::Slice.empty)
         result = step.apply(doc)
 
@@ -541,6 +545,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("axbc")
       end
 
       it "succeeds when from=0 and to=doc.node_size (replace entire document)" do
@@ -579,9 +584,9 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
       expect(inverted).to be_a(Prosereflect::Transform::ReplaceStep)
       # invert: from = 3, to = 3 + slice.size
-      # slice contains text "b" (node_size=2), slice.size = 2 + 0 + 0 = 2
+      # slice contains text "b" (node_size=1), slice.size = 1 + 0 + 0 = 1
       expect(inverted.from).to eq(3)
-      expect(inverted.to).to eq(5)
+      expect(inverted.to).to eq(4)
       # The inverted step's slice is the content that was at positions 3-3 (empty)
       expect(inverted.slice).to be_a(Prosereflect::Transform::Slice)
       expect(inverted.slice.empty?).to be true
@@ -625,9 +630,9 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
       inverted = step.invert(doc)
 
       expect(inverted).to be_a(Prosereflect::Transform::ReplaceStep)
-      # invert: from = 3, to = 3 + slice.size = 3 + 3 (text "XY" = node_size 3)
+      # invert: from = 3, to = 3 + slice.size = 3 + 2 (text "XY" = node_size 2)
       expect(inverted.from).to eq(3)
-      expect(inverted.to).to eq(6)
+      expect(inverted.to).to eq(5)
       # The inverted slice should contain what was at positions 3-6
       expect(inverted.slice).not_to be_nil
     end
@@ -648,7 +653,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
       step = Prosereflect::Transform::ReplaceStep.new(2, 7, replacement)
       inverted = step.invert(doc)
 
-      # slice.size for text "abc" = node_size 4 + open_start 0 + open_end 0 = 4
+      # slice.size for text "abc" = node_size 3 + open_start 0 + open_end 0 = 3
       expect(inverted.to).to eq(2 + replacement.size)
     end
   end
@@ -666,22 +671,22 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
     end
 
     it "returns a StepMap with correct ranges for insertion" do
-      # Insert "XY" (node_size=3) at position 2
+      # Insert "XY" (node_size=2) at position 2
       slice = Prosereflect::Transform::Slice.new(
         Prosereflect::Fragment.new([Prosereflect::Text.new(text: "XY")]),
       )
       step = Prosereflect::Transform::ReplaceStep.new(2, 2, slice)
       step_map = step.get_map
 
-      # delta = 3 - (2-2) = 3
-      # ranges: [[2, 2, 2, 5]]
-      expect(step_map.ranges).to eq([[2, 2, 2, 5]])
+      # delta = 2 - (2-2) = 2
+      # ranges: [[2, 2, 2, 4]]
+      expect(step_map.ranges).to eq([[2, 2, 2, 4]])
     end
 
     it "returns a StepMap with correct ranges for same-size replacement" do
       # Replace 3 positions with 3-node_size content (net zero)
       slice = Prosereflect::Transform::Slice.new(
-        Prosereflect::Fragment.new([Prosereflect::Text.new(text: "ab")]),
+        Prosereflect::Fragment.new([Prosereflect::Text.new(text: "abc")]),
       )
       step = Prosereflect::Transform::ReplaceStep.new(2, 5, slice)
       step_map = step.get_map
@@ -718,8 +723,8 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
       step = Prosereflect::Transform::ReplaceStep.new(2, 2, slice)
       step_map = step.get_map
 
-      # For range [2,2,2,5]: positions >= 2 get offset by (5-2) = 3
-      expect(step_map.map(5)).to eq(8)
+      # For range [2,2,2,4]: positions >= 2 get offset by (4-2) = 2
+      expect(step_map.map(5)).to eq(7)
     end
 
     it "marks positions in deleted range as deleted" do
@@ -769,8 +774,8 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
       # Position 1 is before insertion, stays the same
       expect(mapping.map(1)).to eq(1)
-      # Position 5 is after insertion, shifts by +3
-      expect(mapping.map(5)).to eq(8)
+      # Position 5 is after insertion, shifts by +2
+      expect(mapping.map(5)).to eq(7)
     end
 
     it "maps positions through multiple steps" do
@@ -967,6 +972,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("hi")
       end
 
       it "inserts into an empty document" do
@@ -997,12 +1003,13 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
             },
           ],
         )
-        # doc=1 + bq=1 + para=1 + text("quoted")=7 = 10
-        # Delete text inside blockquote (positions 4-9)
-        step = Prosereflect::Transform::ReplaceStep.new(4, 9, Prosereflect::Transform::Slice.empty)
+        # doc=1 + bq=1 + para=1 + text("quoted")=6 = 9
+        # "quoted" chars occupy [3,9); delete all of them (positions 3-9)
+        step = Prosereflect::Transform::ReplaceStep.new(3, 9, Prosereflect::Transform::Slice.empty)
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.content.first.content.first.content).to be_empty
       end
 
       it "applies a step to a document with multiple block types" do
@@ -1015,12 +1022,14 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
             { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "last" }] },
           ],
         )
-        # Delete the heading (positions 8-15)
-        # first para: 1+1+6=8, heading: 1+1+6=8, heading starts at pos 8
-        step = Prosereflect::Transform::ReplaceStep.new(8, 15, Prosereflect::Transform::Slice.empty)
+        # Delete the heading (positions 7-13)
+        # first para: 1+1+5=7, heading spans [7,13)
+        step = Prosereflect::Transform::ReplaceStep.new(7, 13, Prosereflect::Transform::Slice.empty)
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.content.map(&:type)).to eq(%w[paragraph paragraph])
+        expect(result.doc.text_content).to eq("first\nlast")
       end
     end
 
@@ -1031,11 +1040,11 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
     context "when replacing across node boundaries" do
       it "deletes content spanning two paragraphs" do
         doc = build_doc_with_paragraphs("ab", "cd")
-        # doc=1 + (para=1+text=3) + (para=1+text=3) = 9
+        # doc=1 + (para=1+text=2) + (para=1+text=2) = 7
         # Positions: 0=doc, 1=para1, 2="a", 3="b", 4=para1_end/para2_start
-        #            5=para2, 6="c", 7="d", 8=end
-        # Delete from middle of para1 to middle of para2 (3-7)
-        step = Prosereflect::Transform::ReplaceStep.new(3, 7, Prosereflect::Transform::Slice.empty)
+        #            5="c", 6="d", 7=end
+        # Delete from middle of para1 to middle of para2 (3-6)
+        step = Prosereflect::Transform::ReplaceStep.new(3, 6, Prosereflect::Transform::Slice.empty)
         result = step.apply(doc)
 
         expect(result).to be_ok
@@ -1044,7 +1053,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
 
       it "leaves the two paragraphs unjoined rather than merging them" do
         doc = build_doc_with_paragraphs("ab", "cd")
-        step = Prosereflect::Transform::ReplaceStep.new(3, 7, Prosereflect::Transform::Slice.empty)
+        step = Prosereflect::Transform::ReplaceStep.new(3, 6, Prosereflect::Transform::Slice.empty)
         result = step.apply(doc)
 
         # Documents current behaviour, not desired ProseMirror parity: a join
@@ -1057,10 +1066,11 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         replacement = Prosereflect::Transform::Slice.new(
           Prosereflect::Fragment.new([Prosereflect::Text.new(text: "XY")]),
         )
-        step = Prosereflect::Transform::ReplaceStep.new(3, 7, replacement)
+        step = Prosereflect::Transform::ReplaceStep.new(3, 6, replacement)
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.content.map(&:type)).to eq(%w[paragraph text paragraph])
       end
 
       # KNOWN LIMITATION, asserted so it cannot pass unnoticed: an inline slice
@@ -1074,7 +1084,7 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         replacement = Prosereflect::Transform::Slice.new(
           Prosereflect::Fragment.new([Prosereflect::Text.new(text: "XY")]),
         )
-        step = Prosereflect::Transform::ReplaceStep.new(3, 7, replacement)
+        step = Prosereflect::Transform::ReplaceStep.new(3, 6, replacement)
         result = step.apply(doc)
 
         expect(result.doc.to_h).to eq(
@@ -1112,12 +1122,13 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
             },
           ],
         )
-        # doc=1, table=1, row=1, cell=1, para=1, text("cell")=5 = 10
-        # Positions inside text: 6="c", 7="e", 8="l", 9="l"
+        # doc=1, table=1, row=1, cell=1, para=1, text("cell")=4 = 9
+        # Positions inside text: 5="c", 6="e", 7="l", 8="l"
         step = Prosereflect::Transform::ReplaceStep.new(7, 9, Prosereflect::Transform::Slice.empty)
         result = step.apply(doc)
 
         expect(result).to be_ok
+        expect(result.doc.text_content).to eq("ce")
       end
     end
 
@@ -1137,8 +1148,8 @@ RSpec.describe "Replace step operations" do # rubocop:disable RSpec/DescribeClas
         )
         slice = Prosereflect::Transform::Slice.new(content, 1, 1)
 
-        # content_size = 4 (text "abc" = 3+1), size = 4+1+1 = 6
-        expect(slice.size).to eq(6)
+        # content_size = 3 (text "abc" = 3), size = 3+1+1 = 5
+        expect(slice.size).to eq(5)
         expect(slice.open_start).to eq(1)
         expect(slice.open_end).to eq(1)
       end

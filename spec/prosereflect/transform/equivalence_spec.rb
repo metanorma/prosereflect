@@ -172,8 +172,8 @@ RSpec.describe "TransformEquivalence" do # rubocop:disable RSpec/DescribeClass
                            { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "hi" }] },
                          ],
                        })
-      # doc=1 + para=1 + text("hi")=3 = 5
-      expect(doc.node_size).to eq(5)
+      # doc=1 + para=1 + text("hi")=2 = 4
+      expect(doc.node_size).to eq(4)
     end
 
     it "document with multiple paragraphs" do
@@ -184,19 +184,19 @@ RSpec.describe "TransformEquivalence" do # rubocop:disable RSpec/DescribeClass
                            { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "cd" }] },
                          ],
                        })
-      # doc=1 + (para=1+text=3) + (para=1+text=3) = 9
-      expect(doc.node_size).to eq(9)
+      # doc=1 + (para=1+text=2) + (para=1+text=2) = 7
+      expect(doc.node_size).to eq(7)
     end
 
-    it "text node_size equals length + 1" do
+    it "text node_size equals length" do
       text = Prosereflect::Text.new(text: "hello")
-      expect(text.node_size).to eq(6)
-      expect(text.node_size).to eq(text.text.length + 1)
+      expect(text.node_size).to eq(5)
+      expect(text.node_size).to eq(text.text.length)
     end
 
-    it "empty text node_size is 1" do
+    it "empty text node_size is 0" do
       text = Prosereflect::Text.new(text: "")
-      expect(text.node_size).to eq(1)
+      expect(text.node_size).to eq(0)
     end
   end
 
@@ -221,8 +221,8 @@ RSpec.describe "TransformEquivalence" do # rubocop:disable RSpec/DescribeClass
                            { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "there" }] },
                          ],
                        })
-      # Position 5 = after first paragraph (1+1+3=5), before second paragraph
-      r = doc.resolve(5)
+      # Position 4 = after first paragraph (1+1+2=4), before second paragraph
+      r = doc.resolve(4)
       expect(r.depth).to eq(1)
       expect(r.parent).to be_a(Prosereflect::Paragraph)
     end
@@ -246,10 +246,10 @@ RSpec.describe "TransformEquivalence" do # rubocop:disable RSpec/DescribeClass
                            { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "hi" }] },
                          ],
                        })
-      # doc_size = 1+1+3 = 5
-      r = doc.resolve(5)
+      # doc_size = 1+1+2 = 4
+      r = doc.resolve(4)
       expect(r.depth).to eq(0)
-      expect(r.pos).to eq(5)
+      expect(r.pos).to eq(4)
     end
 
     it "resolve at text position" do

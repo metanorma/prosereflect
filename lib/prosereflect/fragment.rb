@@ -18,7 +18,7 @@ module Prosereflect
 
     # Total size of all nodes in this fragment
     def size
-      @content.sum { |n| n.respond_to?(:node_size) ? n.node_size : n.text_content.length + 1 }
+      @content.sum { |n| n.respond_to?(:node_size) ? n.node_size : n.text_content.length }
     end
 
     # Check if fragment is empty
@@ -104,7 +104,7 @@ module Prosereflect
     end
 
     def text_node_callback(node, pos, from, node_start, callback)
-      callback.call(node, node_start + (from - pos).clamp(0, node.node_size - 1))
+      callback.call(node, node_start + (from - pos).clamp(0, node.node_size))
     end
 
     def node_fully_in_range?(pos, node_end, from, to)

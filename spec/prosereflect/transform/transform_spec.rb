@@ -217,7 +217,9 @@ RSpec.describe Prosereflect::Transform::Transform do
                                                                  ],
                                                                })
       transform = described_class.new(doc_with_two_paras)
-      transform.join(8)
+      # Position 7 is the true boundary between the two paragraphs under
+      # text node_size = length (old +1 model put it at 8).
+      transform.join(7)
       expect(transform.size).to eq(1)
     end
   end

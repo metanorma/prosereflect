@@ -208,7 +208,7 @@ module Prosereflect
 
     # Size of this node in the document tree.
     # For non-text nodes: 1 (opening token) + sum of children's node_size.
-    # For text nodes: overridden to text.length + 1.
+    # For text nodes: overridden to text.length (no token of their own).
     def node_size
       size = 1
       content&.each { |child| size += child.node_size }
@@ -255,13 +255,10 @@ module Prosereflect
     # Positions are local to this node: its own token sits at 0 and its children
     # begin at offset 1. An element child's token sits at its start.
     #
-    # A text child needs care, because its characters and its span differ. Its
-    # characters occupy [start, start + text.length), but its node_size is
-    # text.length + 1, so it spans [start, start + text.length + 1). The extra
-    # position is the caret after the final character, at start + text.length;
-    # the next sibling begins one past that. This gap between "last character"
-    # and "end of span" is the source of most off-by-one errors in here.
-    # For "Hello" at start 2: characters 2..6, carets 2..7, next sibling at 8.
+    # A text child occupies exactly its characters: [start, start + text.length),
+    # and its node_size is text.length. The caret after the final character, at
+    # start + text.length, is the position of the next sibling. For "Hello" at
+    # start 2: characters occupy [2, 7) (carets 2..6), next sibling at 7.
     def replace(from, to, nodes = [])
       index, child_start = child_to_descend_into(from, to, nodes)
       return splice(from, to, nodes) unless index
@@ -379,9 +376,9 @@ module Prosereflect
 
     # Rebuild this node's children around the replaced range. Children wholly
     # outside the range are carried across untouched; only the trimmed edges and
-    # the inserted nodes meet, so only they are merged. Coalescing untouched
-    # siblings would silently change this node's size, and every position after
-    # it, for an edit that never reached them.
+    # the inserted nodes meet, so only they are merged. Renormalizing untouched
+    # siblings would restructure parts of the document the edit never reached, so
+    # merging is confined to the spliced run.
     def splice(from, to, nodes)
       kept_before = []
       kept_after = []
