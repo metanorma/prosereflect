@@ -255,10 +255,10 @@ module Prosereflect
     # Positions are local to this node: its own token sits at 0 and its children
     # begin at offset 1. An element child's token sits at its start.
     #
-    # A text child occupies exactly its characters: [start, start + text.length),
-    # and its node_size is text.length. The caret after the final character, at
-    # start + text.length, is the position of the next sibling. For "Hello" at
-    # start 2: characters occupy [2, 7) (carets 2..6), next sibling at 7.
+    # A text child occupies exactly its characters: node_size is text.length, so
+    # it spans [start, start + text.length) and the next sibling begins at
+    # start + text.length. For "Hello" at start 2: it spans [2, 7) and the next
+    # sibling begins at 7.
     def replace(from, to, nodes = [])
       index, child_start = child_to_descend_into(from, to, nodes)
       return splice(from, to, nodes) unless index
