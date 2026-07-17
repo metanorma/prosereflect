@@ -253,8 +253,12 @@ module Prosereflect
       # or after `to`, and to >= from, so `from` still means the same thing in
       # the trimmed node. Trimming the head first would shift `to`.
       # Copy even when the tail needs no trimming, so the result always gets its
-      # own content array rather than aliasing the receiver's. Untouched child
-      # nodes are still shared by reference, exactly as `replace` shares them.
+      # own content array rather than aliasing the receiver's. `copy` hands the
+      # array to lutaml's `content=`, which stores a copy rather than the array
+      # we pass, so the result does not share it; node_spec pins that with an
+      # identity assertion, so a change in lutaml surfaces as a failure rather
+      # than as silent aliasing. Untouched child nodes are still shared by
+      # reference, exactly as `replace` shares them.
       trimmed = to < node_size ? replace(to, node_size, []) : copy(content)
       # Children begin at 1, so from <= 1 already starts at the first child and
       # there is no head to remove.
