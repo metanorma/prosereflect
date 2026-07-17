@@ -1,6 +1,6 @@
 # PR 02: Make mark and attr steps work
 
-**Size:** large. **Depends on:** [01](01-position-primitives.md).
+**Size:** large. **Depends on:** nothing (01 is done).
 
 Grouped because these are the same bug wearing different hats. Every one of these
 steps should target a node or a range, and every one of them instead maps only the
@@ -107,8 +107,9 @@ def find_node_at(doc, pos)      # :85
   doc.nodes_between(pos, pos + 1) { |node| result = node }
 ```
 
-`nodes_between` skips siblings, so this can return the wrong node or nothing.
-Fixed by [01](01-position-primitives.md).
+`nodes_between` used to skip siblings, so this could return the wrong node or
+nothing. Fixed in 01, so `find_node_at` gets that for free. Its other two bugs
+(nil attrs, top-level-only replacement) remain.
 
 ## What the fix needs
 

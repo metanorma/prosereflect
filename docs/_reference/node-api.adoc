@@ -36,7 +36,7 @@ Base class for all document elements.
 | `node_size` | Size in document position space
 | `text?` | Whether this is a text node
 | `text_content` | Combined text of all descendant text nodes
-| `cut(from, to)` | Return a copy restricted to position range
+| `cut(from, to)` | Return a copy restricted to `[from, to)`. Positions are local to this node (its token at 0, children from 1), the same space `replace` uses. `cut` keeps exactly what `replace` removes.
 | `copy(content)` | Return a copy with different content
 | `add_child(node)` | Append a child node
 | `find_first(type)` | Find first descendant of type

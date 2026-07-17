@@ -115,6 +115,23 @@ RSpec.describe Prosereflect::Fragment do
     end
   end
 
+  describe "nodes_between" do
+    it "visits a node when an earlier node is entirely before the range" do
+      frag = described_class.new(
+        [Prosereflect::Text.new(text: "ab"), Prosereflect::Text.new(text: "cd")],
+      )
+      # "ab" occupies [0,2), "cd" occupies [2,4). Asking only for "cd" must not
+      # strand `pos` at 0 while skipping "ab". Assert visitation only: the
+      # position this callback reports is separately wrong (it yields 0, not 2,
+      # because text_node_callback reports node_start + (from - pos) rather than
+      # the node's own start). Out of scope here; see TODO 07.
+      visited = []
+      frag.nodes_between(2, 4) { |node, _pos| visited << node.text }
+
+      expect(visited).to eq(%w[cd])
+    end
+  end
+
   describe "replace_child" do
     it "replaces child at index" do
       t1 = Prosereflect::Text.new(text: "a")

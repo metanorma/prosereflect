@@ -482,13 +482,85 @@ RSpec.describe Prosereflect::Node do
       node = described_class.create("parent")
       node.add_child(Prosereflect::Text.create("first"))
       node.add_child(Prosereflect::Text.create("second"))
-      cut_node = node.cut(0, 5) # content-relative: first text node_size (5), no parent token
+      cut_node = node.cut(1, 6) # tree-local: "first" spans [1, 6)
       expect(cut_node).not_to eq(node)
       expect(cut_node.content.map(&:text)).to eq(%w[first])
+    end
+
+    it "cuts a partial range out of a text child" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("abcd"))
+      # Tree-local: the parent's token is at 0, so "abcd" spans [1,5) and its
+      # characters sit at 1,2,3,4. The range [2,4) is "bc".
+      expect(node.cut(2, 4).content.map(&:text)).to eq(%w[bc])
+    end
+
+    it "is the exact complement of replace over the same range" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("abcd"))
+      # cut keeps what replace removes. These two must never disagree about
+      # what [2,4) means.
+      expect(node.cut(2, 4).content.map(&:text)).to eq(%w[bc])
+      expect(node.replace(2, 4, []).content.map(&:text)).to eq(%w[ad])
+    end
+
+    it "cuts a partial range through a nested child" do
+      doc = Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [
+          { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "abc" }] },
+          { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "xyz" }] },
+        ],
+      )
+      # para1 spans [1,5). The range [2,4) is "ab" inside it, and the second
+      # paragraph lies wholly outside.
+      cut = doc.cut(2, 4)
+
+      expect(cut.content.map(&:type)).to eq(%w[paragraph])
+      expect(cut.text_content).to eq("ab")
+    end
+
+    it "returns a node with no content for a zero-width cut" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("abcd"))
+      # No empty-text residue: a zero-width cut keeps nothing.
+      expect(node.cut(2, 2).content.to_a).to be_empty
+    end
+
+    it "does not alias the receiver when a side needs no trimming" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("abcd"))
+      # [1, node_size) needs neither a head nor a tail trim, but it is not the
+      # full range, so it must still be a copy. Aliasing here would let a caller
+      # mutate the original through the cut result.
+      cut_node = node.cut(1, node.node_size)
+
+      expect(cut_node).not_to be(node)
+      cut_node.add_child(Prosereflect::Text.create("x"))
+      expect(node.text_content).to eq("abcd")
     end
   end
 
   describe "#nodes_between" do
+    it "visits a sibling when an earlier sibling is entirely before the range" do
+      doc = Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [
+          { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "ab" }] },
+          { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "cd" }] },
+        ],
+      )
+      # nodes_between takes content offsets, so this document's range is [0,6):
+      # para1 occupies [0,3), para2 [3,6). Asking for [4,6) lands wholly inside
+      # para2, so para1 is skipped. Skipping must still advance `pos`, or every
+      # later sibling is measured from a stale offset and the walk yields
+      # nothing. (The positions it reports back are tree positions, hence 4/5.)
+      visited = []
+      doc.nodes_between(4, 6) { |node, pos| visited << [node.type, pos] }
+
+      expect(visited).to eq([["paragraph", 4], ["text", 5]])
+    end
+
     it "yields children in range" do
       node = described_class.create("parent")
       t1 = Prosereflect::Text.create("ab")

@@ -103,13 +103,43 @@ the codebase quietly implies the first while the README implies the second.
   - `Node#node_size` becomes `content + 2`; the doc stops contributing its own
     token at 0.
   - Everything positional needs review: `resolve`, `nodes_between`, `cut`,
-    `cut_content`, `replace`, `splice`, `head_of` / `tail_of`,
-    `child_to_descend_into`, `StepMap`, `Mapping`.
+    `replace`, `splice`, `head_of` / `tail_of`, `child_to_descend_into`,
+    `StepMap`, `Mapping`. (`cut` now delegates to `replace`, so moving `replace`
+    moves `cut` with it. That is one fewer place to change than before 01.)
   - Every hardcoded spec position renumbers again, a bigger sweep than PR #13's
     28 assertions.
 - Payoff: positions become interchangeable with ProseMirror and prosemirror-py.
   `inline_insertion?` is deleted rather than maintained. ProseMirror's own
   algorithms become portable instead of needing reinvention.
+
+## Related decision already taken: `Node#cut` is tree-local (contested)
+
+TODO 01 had to settle `Node#cut`'s coordinate contract, because `cut_content` was
+correct in *neither* space and could not be fixed without choosing one. It chose
+**tree-local** (this node's token at 0, children from 1, full range
+`[0, node_size]`), and `cut` now delegates to `replace`.
+
+**This was contested, and the dissent is recorded here because this is where it
+gets revisited.** A Codex review rated it High and argued for **content-space**:
+
+| Argument for content-space | Why it was rejected |
+|---|---|
+| `node.rb` documented "positions are relative to the start of this node's content" | That docstring sat on a method correct in neither space. It described an aspiration the code never honoured. |
+| The existing spec had `cut(0,5) => "first"` | That spec was written in PR #13 from the observed broken behaviour. It pinned the bug. |
+| ProseMirror's `Node.cut` defaults to `content.size` | PM is internally consistent: its `replace` resolves in content space too, so PM's `cut`/`replace` are complements. This library's `replace` is already tree-local, so copying only PM's `cut` imports PM's value while discarding PM's consistency. |
+
+The deciding argument was **complementarity**: `cut` must keep exactly what
+`replace` removes. Measured on `parent(text "abcd")`, `replace(2,4,[])` gives
+`"ad"` and `cut(2,4)` gives `"bc"`. Under content-space `cut(2,4)` would give
+`"cd"` while `replace(2,4)` still removed `"bc"`, so the same two integers would
+mean different ranges on the same object.
+
+**If this doc lands on Option B, revisit that.** Under `+2`, `cut` and `replace`
+would both move to content space together and PM's `Node.cut` becomes directly
+portable. The re-cost is small and bounded: `Node#cut` had **zero production
+callers** at the time of the decision, so nothing has accumulated against it. That
+stays true only until [03](03-slice-depths-and-invert.md) gives it its first real
+caller, which is another reason to settle this doc before starting 03.
 
 ## Ordering, and why this blocks 03
 

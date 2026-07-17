@@ -85,7 +85,10 @@ module Prosereflect
 
       @content.each do |node|
         node_end = pos + node.node_size
-        next unless node_end > from
+        if node_end <= from
+          pos = node_end
+          next
+        end
 
         dispatch_node_callback(node, pos, node_end, from, to, cb, node_start)
         pos = node_end

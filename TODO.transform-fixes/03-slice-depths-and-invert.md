@@ -1,6 +1,6 @@
 # PR 03: Slice open depths, invert round-trip, and block joining
 
-**Size:** large. **Depends on:** [01](01-position-primitives.md).
+**Size:** large. **Depends on:** the [06](06-prosemirror-position-parity.md) decision (01 is done).
 
 Grouped because all three symptoms are one missing feature. `Slice` carries
 `open_start` and `open_end`, and nothing acts on them. `invert` needs to cut a
@@ -79,8 +79,12 @@ flat. Then:
 - A cross-block delete fits the two open edges together, which joins the blocks.
 - An inline slice lands inside a block rather than beside one.
 
-`Node#cut_content` is the natural home for the range cut, but it is itself buggy
-today. [01](01-position-primitives.md) fixes it first.
+`Node#cut` is the natural home for the range cut. 01 fixed it: `cut_content` is
+gone and `cut` now delegates to `replace`, tree-local, keeping exactly what
+`replace` removes. **This PR gives `cut` its first production caller**, which is
+why the `cut` contract must be settled before starting here. See the dissent note
+in [06](06-prosemirror-position-parity.md): tree-local was chosen over
+content-space, and that choice was contested.
 
 ## Specs
 
