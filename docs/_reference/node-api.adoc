@@ -59,7 +59,7 @@ Text node (PM_TYPE: "text").
 | Method | Description
 
 | `text` | The text string
-| `node_size` | `text.length + 1`
+| `node_size` | `text.length` (text nodes carry no token of their own)
 | `text?` | Always `true`
 |===
 

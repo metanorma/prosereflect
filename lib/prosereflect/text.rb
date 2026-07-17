@@ -23,9 +23,10 @@ module Prosereflect
       text || ""
     end
 
-    # Text node size is text length + 1 (for the opening token)
+    # Text node size is its character count. Text nodes carry no token of their
+    # own, so splitting or merging a run is position-neutral.
     def node_size
-      (text || "").length + 1
+      (text || "").length
     end
 
     # Text nodes are text nodes

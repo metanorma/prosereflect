@@ -60,16 +60,16 @@ RSpec.describe Prosereflect::Fragment do
     it "returns total node sizes" do
       text = Prosereflect::Text.new(text: "hello")
       frag = described_class.new([text])
-      # text "hello" has node_size = 5 + 1 = 6
-      expect(frag.size).to eq(6)
+      # text "hello" has node_size = 5
+      expect(frag.size).to eq(5)
     end
 
     it "sums multiple nodes" do
       t1 = Prosereflect::Text.new(text: "ab")
       t2 = Prosereflect::Text.new(text: "cd")
       frag = described_class.new([t1, t2])
-      # 3 + 3 = 6
-      expect(frag.size).to eq(6)
+      # 2 + 2 = 4
+      expect(frag.size).to eq(4)
     end
   end
 
@@ -227,7 +227,7 @@ RSpec.describe Prosereflect::Fragment do
       frag1 = described_class.new([t1])
       frag2 = described_class.new([t2, t3])
       # Same first node, but different lengths
-      expect(frag1.find_diff_start(frag2)).to eq(6) # node_size of "hello"
+      expect(frag1.find_diff_start(frag2)).to eq(5) # node_size of "hello"
     end
   end
 

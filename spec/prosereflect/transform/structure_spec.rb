@@ -51,8 +51,8 @@ RSpec.describe Prosereflect::Transform::Structure do
     end
 
     it "returns true for position between paragraphs" do
-      # Position 8 is between the two paragraphs (after "Hello" para, before "World" para)
-      expect(described_class.can_join?(doc, 8)).to be true
+      # Position 7 is between the two paragraphs (after "Hello" para, before "World" para)
+      expect(described_class.can_join?(doc, 7)).to be true
     end
   end
 

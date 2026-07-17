@@ -433,16 +433,16 @@ RSpec.describe Prosereflect::Node do
     it "includes text children" do
       node = described_class.create("parent")
       node.add_child(Prosereflect::Text.create("hello"))
-      # 1 (parent) + 6 (text "hello") = 7
-      expect(node.node_size).to eq(7)
+      # 1 (parent) + 5 (text "hello") = 6
+      expect(node.node_size).to eq(6)
     end
 
     it "sums multiple children" do
       node = described_class.create("parent")
       node.add_child(Prosereflect::Text.create("ab"))
       node.add_child(Prosereflect::Text.create("cd"))
-      # 1 (parent) + 3 ("ab") + 3 ("cd") = 7
-      expect(node.node_size).to eq(7)
+      # 1 (parent) + 2 ("ab") + 2 ("cd") = 5
+      expect(node.node_size).to eq(5)
     end
 
     it "handles deeply nested content" do
@@ -450,8 +450,8 @@ RSpec.describe Prosereflect::Node do
       para = Prosereflect::Paragraph.create
       para.add_child(Prosereflect::Text.create("hi"))
       doc.add_child(para)
-      # 1 (doc) + 1 (para) + 3 (text "hi") = 5
-      expect(doc.node_size).to eq(5)
+      # 1 (doc) + 1 (para) + 2 (text "hi") = 4
+      expect(doc.node_size).to eq(4)
     end
   end
 
@@ -482,8 +482,9 @@ RSpec.describe Prosereflect::Node do
       node = described_class.create("parent")
       node.add_child(Prosereflect::Text.create("first"))
       node.add_child(Prosereflect::Text.create("second"))
-      cut_node = node.cut(0, 1 + 7) # 1 parent + first text (7)
+      cut_node = node.cut(0, 5) # content-relative: first text node_size (5), no parent token
       expect(cut_node).not_to eq(node)
+      expect(cut_node.content.map(&:text)).to eq(%w[first])
     end
   end
 
