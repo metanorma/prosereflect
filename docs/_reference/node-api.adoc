@@ -36,7 +36,7 @@ Base class for all document elements.
 | `node_size` | Size in document position space
 | `text?` | Whether this is a text node
 | `text_content` | Combined text of all descendant text nodes
-| `cut(from, to)` | Restrict content to the half-open range `[from, to)`. Positions are local to this node (its token at 0, children from 1), the same space `replace` uses, so `cut` keeps exactly what `replace` removes. `cut(0, node_size)` selects the whole node and returns `self`; any other range returns a new node.
+| `cut(from, to)` | Restrict content to the half-open range `[from, to)`. Positions are local to this node (its token at 0, children from 1), the same space `replace` uses, so `cut` keeps exactly what `replace` removes. `cut(0, node_size)` selects the whole node and returns `self`; any other range returns a new node. `Prosereflect::Text` overrides this with different semantics, see below.
 | `copy(content)` | Return a copy with different content
 | `add_child(node)` | Append a child node
 | `find_first(type)` | Find first descendant of type
@@ -61,6 +61,7 @@ Text node (PM_TYPE: "text").
 | `text` | The text string
 | `node_size` | `text.length` (text nodes carry no token of their own)
 | `text?` | Always `true`
+| `cut(from, to)` | Overrides `Node#cut`. Offsets are **character indices**, not tree positions, because a text node has no token of its own: `Text.create("abcd").cut(1, 3)` is `"bc"`. It always returns a new text node, never `self`, so the full-range identity behaviour of `Node#cut` does not apply here.
 |===
 
 == Prosereflect::Mark::Base
