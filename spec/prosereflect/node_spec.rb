@@ -470,12 +470,15 @@ RSpec.describe Prosereflect::Node do
   describe "#cut" do
     it "returns self for full range" do
       node = described_class.create("node")
-      expect(node.cut(0, 1)).to eq(node)
+      # `be`, not `eq`: the full range is documented to hand back the receiver
+      # itself rather than a copy, so callers may get an alias. Value equality
+      # would pass even if that changed.
+      expect(node.cut(0, 1)).to be(node)
     end
 
     it "returns self for default range" do
       node = described_class.create("node")
-      expect(node.cut).to eq(node)
+      expect(node.cut).to be(node)
     end
 
     it "returns copy with subset of content" do
@@ -527,17 +530,33 @@ RSpec.describe Prosereflect::Node do
       expect(node.cut(2, 2).content.to_a).to be_empty
     end
 
-    it "does not alias the receiver when a side needs no trimming" do
+    it "gives the result its own content array when a side needs no trimming" do
       node = described_class.create("parent")
       node.add_child(Prosereflect::Text.create("abcd"))
       # [1, node_size) needs neither a head nor a tail trim, but it is not the
-      # full range, so it must still be a copy. Aliasing here would let a caller
-      # mutate the original through the cut result.
+      # full range, so it must still be a copy. Returning self here would let a
+      # caller mutate the original through the cut result.
       cut_node = node.cut(1, node.node_size)
 
       expect(cut_node).not_to be(node)
+      expect(cut_node.content).not_to be(node.content)
       cut_node.add_child(Prosereflect::Text.create("x"))
       expect(node.text_content).to eq("abcd")
+    end
+
+    it "shares untouched child nodes with the receiver, as replace does" do
+      node = described_class.create("parent")
+      node.add_child(Prosereflect::Text.create("ab"))
+      node.add_child(Prosereflect::Text.create("cd"))
+      # Structural sharing is the model this library already uses: splice carries
+      # untouched children across by reference, so replace and cut both share
+      # them. Documented rather than guarded, because the guarantee cut offers is
+      # a private content array, NOT deep independence. Callers must not mutate a
+      # child of a cut result in place.
+      cut_node = node.cut(1, 3)
+
+      expect(cut_node.content.first).to be(node.content.first)
+      expect(node.replace(4, 5, []).content.first).to be(node.content.first)
     end
   end
 

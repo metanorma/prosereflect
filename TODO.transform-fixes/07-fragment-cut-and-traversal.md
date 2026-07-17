@@ -2,8 +2,8 @@
 
 **Size:** medium. **Depends on:** nothing. **Found:** while doing TODO 01.
 
-Four issues found and verified while fixing the position primitives (three
-defects plus one unowned design asymmetry), all deliberately left alone to keep
+Five issues found and verified while fixing the position primitives (three
+defects plus two unowned design questions), all deliberately left alone to keep
 that PR focused. None is a regression from it.
 
 All three are **dead or near-dead code today**, which is why the suite is green
@@ -132,7 +132,43 @@ Fragment[text("ab"), text("cd")].nodes_between(2, 4)
 The TODO 01 spec for the sibling-skip fix asserts **visitation only** and
 deliberately does not assert the position, with a comment pointing here.
 
-## 4. `nodes_between` takes content inputs but emits tree outputs
+## 4. Structural sharing without immutable nodes
+
+ProseMirror is a persistent data structure: nodes are immutable, so sharing them
+between a source and a derived node is free and safe. This library copies the
+sharing but not the immutability.
+
+`splice` carries untouched children across by reference (`node.rb`,
+`kept_before << child` / `kept_after << child`), so `replace` shares them, and
+`cut` shares them too now that it delegates to `replace`. But nodes here are
+mutable: `add_child` and `text=` both mutate in place. So:
+
+```ruby
+cut = parent.cut(1, parent.node_size)
+cut.content.first.equal?(parent.content.first)   # => true
+cut.content.first.text = "changed"
+parent.text_content                              # => "changed"
+```
+
+This is **pre-existing and pervasive**, not specific to `cut`: `replace` has
+always behaved this way, and it is the main transform path. `cut`'s contract is
+narrow on purpose: the result gets its own *content array*, so appending to it is
+safe; it does not get its own *children*.
+
+Nothing is broken today because the transform layer treats nodes as values and
+rebuilds rather than mutates. The hazard is that the mutating API (`add_child`,
+`text=`) is public and gives no hint that a node may be shared.
+
+Options, none of them small: make nodes immutable (the ProseMirror answer, and a
+natural companion to [06](06-prosemirror-position-parity.md) Option B), deep-copy
+on derive (costly, and diverges from PM), or document the sharing and treat
+in-place mutation of a derived node as caller error (cheapest, status quo made
+explicit).
+
+Worth deciding alongside 06, since immutability is the other half of what makes
+ProseMirror's model work.
+
+## 5. `nodes_between` takes content inputs but emits tree outputs
 
 Not a bug so much as an unowned asymmetry, but it caused a false argument during
 TODO 01 and will bite TODO 03.
@@ -157,5 +193,6 @@ above) and must go with or after it. When you do it, add a spec proving
 `descendants` visits every node of a **multi-child** parent: a single-child parent
 passes either way and hides the bug.
 
-4 is a decision to record, and should be settled alongside
-[06](06-prosemirror-position-parity.md), since it is the same class of question.
+4 and 5 are decisions to record rather than bugs to fix, and both should be
+settled alongside [06](06-prosemirror-position-parity.md), since all three are the
+same class of question: how closely does this library follow ProseMirror's model?

@@ -236,13 +236,15 @@ module Prosereflect
       false
     end
 
-    # Return a copy of this node with content restricted to the range
-    # [from, to). Positions are local to this node, the same space `replace`
+    # Restrict this node's content to the half-open range [from, to), returning
+    # a new node. Positions are local to this node, the same space `replace`
     # uses: this node's own token sits at 0 and its children begin at offset 1,
-    # so the full range is [0, node_size]. `cut` keeps exactly what `replace`
-    # removes: for a parent holding "abcd", cut(2, 4) is "bc" while
-    # replace(2, 4, []) is "ad". Text overrides this and reads the offsets as
-    # character indices.
+    # so cut(0, node_size) selects the whole node and returns `self` rather than
+    # a copy. Every other range returns a node with its own content array,
+    # though untouched child nodes are shared by reference, exactly as `replace`
+    # shares them. `cut` keeps exactly what `replace` removes: for a parent
+    # holding "abcd", cut(2, 4) is "bc" while replace(2, 4, []) is "ad". Text
+    # overrides this and reads the offsets as character indices.
     def cut(from = 0, to = nil)
       to ||= node_size
       return self if from.zero? && to == node_size
@@ -250,8 +252,9 @@ module Prosereflect
       # Trim the tail first. Removing [to, node_size) only touches positions at
       # or after `to`, and to >= from, so `from` still means the same thing in
       # the trimmed node. Trimming the head first would shift `to`.
-      # When a side needs no trimming we still copy, because every range other
-      # than the full one must return a node the caller can mutate freely.
+      # Copy even when the tail needs no trimming, so the result always gets its
+      # own content array rather than aliasing the receiver's. Untouched child
+      # nodes are still shared by reference, exactly as `replace` shares them.
       trimmed = to < node_size ? replace(to, node_size, []) : copy(content)
       # Children begin at 1, so from <= 1 already starts at the first child and
       # there is no head to remove.

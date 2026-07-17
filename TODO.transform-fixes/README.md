@@ -14,7 +14,7 @@ possible.
 
 | # | PR | Size | Depends on |
 |---|----|------|-----------|
-| ~~01~~ | ~~Fix `nodes_between` and `cut_content`~~ | — | **Done** |
+| ~~01~~ | ~~Fix `nodes_between` and `cut_content`~~ | n/a | **Done** |
 | [02](02-mark-and-attr-steps.md) | Make mark and attr steps work | Large | nothing |
 | [03](03-slice-depths-and-invert.md) | Slice open depths, invert round-trip, block joining | Large | **the 06 decision** |
 | [04](04-schema-alignment.md) | Align the schema model and bridge it to runtime | Medium, splittable | 03 for the replace half |
@@ -26,8 +26,8 @@ possible.
 `Node#cut` is now tree-local and delegates to `replace`, which deleted the
 duplicate `cut_content` coordinate math. `Node#cut`'s contract is now documented
 on the method: this node's token at 0, children from 1, and `cut` keeps exactly
-what `replace` removes. [07](07-fragment-cut-and-traversal.md) records the three
-defects found during that work but deliberately left alone.
+what `replace` removes. [07](07-fragment-cut-and-traversal.md) records the five
+issues found during that work but deliberately left alone.
 
 **Read [06](06-prosemirror-position-parity.md) before starting
 [03](03-slice-depths-and-invert.md).** It is a decision, not a fix, and 03's
@@ -35,8 +35,9 @@ implementation strategy depends on the answer. Open-depth fitting is ProseMirror
 own algorithm, written against a `+2` coordinate model that this library does not
 use. Building it against the current `+1` model means inventing a bespoke variant
 that cannot be ported from upstream and gets thrown away if the model later moves.
-06 also now settles `Node#cut`'s contract for good: 01 chose tree-local over
-content-space, and that choice was contested (see 06's dissent note).
+06 is also where `Node#cut`'s contract gets revisited: 01 chose tree-local over
+content-space, and that choice was contested (see 06's dissent note). If 06 lands
+on Option B, `cut` moves to content space with everything else.
 
 [02](02-mark-and-attr-steps.md) and [03](03-slice-depths-and-invert.md) no longer
 depend on anything from 01, so 02 can go any time.
@@ -52,7 +53,7 @@ since it would absorb that renumbering automatically.
 several share the same underlying machinery and splitting them would mean building
 the same thing twice. 06 is different in kind: it is an open decision about whether
 this library's coordinate system should match ProseMirror's at all, surfaced while
-confirming the PR #13 fix. 07 collects three defects found while doing 01, kept out
+confirming the PR #13 fix. 07 collects five issues found while doing 01, kept out
 of it to keep that PR focused.
 
 The merges:
