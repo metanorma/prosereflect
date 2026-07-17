@@ -105,7 +105,7 @@ Inline break element within paragraphs.
 
 == Text Nodes
 
-`Prosereflect::Text` represents a text node with `text` attribute and optional marks. `node_size` returns `text.length + 1`.
+`Prosereflect::Text` represents a text node with `text` attribute and optional marks. `node_size` returns `text.length`, since a text node carries no token of its own.
 
 == Common Methods
 

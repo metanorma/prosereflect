@@ -40,18 +40,20 @@ Document
 Each node has a `node_size` that represents its footprint in the document position space:
 
 * **Non-text nodes**: `1` (opening token) + sum of children's `node_size`
-* **Text nodes**: `text.length + 1`
+* **Text nodes**: `text.length`
 
-Example: A document with one paragraph containing "hi" has `node_size` of 5:
+Text nodes carry no token of their own, so they cost exactly their characters. This keeps `node_size` independent of how text happens to be split into nodes: a paragraph holding `"abcd"` as one text node and one holding `"a"` + `"bcd"` as two describe the same document and have the same size. It also makes splitting or merging a run position-neutral.
+
+Example: A document with one paragraph containing "hi" has `node_size` of 4:
 
 [source,ruby]
 ----
-doc.node_size  # 1 (doc) + 1 (para open) + 3 ("hi" + 1) = 5
+doc.node_size  # 1 (doc) + 1 (para open) + 2 ("hi") = 4
 ----
 
 == Positions
 
-Positions are integer offsets into the document tree. Position 0 is before the first child of the root. Each non-text node contributes its opening token (position +1) and its content. Text nodes contribute `text.length + 1`.
+Positions are integer offsets into the document tree. Position 0 is before the first child of the root. Each non-text node contributes its opening token (position +1) and its content. Text nodes contribute `text.length`, so a text node starting at `start` spans `[start, start + text.length)` and its next sibling begins at `start + text.length`.
 
 [source,ruby]
 ----
