@@ -236,18 +236,33 @@ module Prosereflect
       false
     end
 
-    # Return a copy of this node with content restricted to the given range.
-    # Positions are relative to the start of this node's content.
+    # Restrict this node's content to the half-open range [from, to), returning
+    # a new node. Positions are local to this node, the same space `replace`
+    # uses: this node's own token sits at 0 and its children begin at offset 1,
+    # so cut(0, node_size) selects the whole node and returns `self` rather than
+    # a copy. Every other range returns a node with its own content array,
+    # though untouched child nodes are shared by reference, exactly as `replace`
+    # shares them. `cut` keeps exactly what `replace` removes: for a parent
+    # holding "abcd", cut(2, 4) is "bc" while replace(2, 4, []) is "ad". Text
+    # overrides this and reads the offsets as character indices.
     def cut(from = 0, to = nil)
       to ||= node_size
       return self if from.zero? && to == node_size
 
-      if text?
-        # Text nodes override this
-        self
-      else
-        copy(cut_content(from, to))
-      end
+      # Trim the tail first. Removing [to, node_size) only touches positions at
+      # or after `to`, and to >= from, so `from` still means the same thing in
+      # the trimmed node. Trimming the head first would shift `to`.
+      # Copy even when the tail needs no trimming, so the result always gets its
+      # own content array rather than aliasing the receiver's. `copy` hands the
+      # array to lutaml's `content=`, which stores a copy rather than the array
+      # we pass, so the result does not share it; node_spec pins that with an
+      # identity assertion, so a change in lutaml surfaces as a failure rather
+      # than as silent aliasing. Untouched child nodes are still shared by
+      # reference, exactly as `replace` shares them.
+      trimmed = to < node_size ? replace(to, node_size, []) : copy(content)
+      # Children begin at 1, so from <= 1 already starts at the first child and
+      # there is no head to remove.
+      from > 1 ? trimmed.replace(1, from, []) : trimmed
     end
 
     # Replace the range [from, to) with the given nodes, returning a new node.
@@ -278,7 +293,10 @@ module Prosereflect
         break if pos >= to
 
         child_end = pos + child.node_size
-        next unless child_end > from
+        if child_end <= from
+          pos = child_end
+          next
+        end
 
         child_start = node_start + pos + 1
         if cb.call(child, child_start, i) != false && child.content && child.content.any?
@@ -438,24 +456,6 @@ module Prosereflect
       return false unless previous&.text? && node.text?
 
       (previous.marks || []) == (node.marks || [])
-    end
-
-    def cut_content(from, to)
-      return [] unless content
-
-      result = []
-      pos = 0
-      content.each do |child|
-        child_end = pos + child.node_size
-        if pos >= from && child_end <= to
-          result << child
-        elsif pos < to && child_end > from
-          result << child.cut([0, from - pos - 1].max, child.node_size - [0, child_end - to].max)
-        end
-        pos = child_end
-        break if pos >= to
-      end
-      result
     end
 
     def build_path_for_pos(pos, path, index = 0, start_offset = 0)

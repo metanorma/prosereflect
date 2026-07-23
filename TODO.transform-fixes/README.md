@@ -14,12 +14,20 @@ possible.
 
 | # | PR | Size | Depends on |
 |---|----|------|-----------|
-| [01](01-position-primitives.md) | Fix `nodes_between` and `cut_content` | Small | nothing |
-| [02](02-mark-and-attr-steps.md) | Make mark and attr steps work | Large | 01 |
-| [03](03-slice-depths-and-invert.md) | Slice open depths, invert round-trip, block joining | Large | 01, and **the 06 decision** |
+| ~~01~~ | ~~Fix `nodes_between` and `cut_content`~~ | n/a | **Done** |
+| [02](02-mark-and-attr-steps.md) | Make mark and attr steps work | Large | nothing |
+| [03](03-slice-depths-and-invert.md) | Slice open depths, invert round-trip, block joining | Large | **the 06 decision** |
 | [04](04-schema-alignment.md) | Align the schema model and bridge it to runtime | Medium, splittable | 03 for the replace half |
 | [05](05-spec-position-helpers.md) | Replace hardcoded spec positions with computed ones | Small | nothing |
 | [06](06-prosemirror-position-parity.md) | **Decide** on ProseMirror position parity (`+1` vs `+2`) | A decision, then very large or zero | nothing |
+| [07](07-fragment-cut-and-traversal.md) | `Fragment#cut` and the traversal position bugs | Medium | nothing |
+
+**01 is done.** `nodes_between` no longer skips siblings (both copies), and
+`Node#cut` is now tree-local and delegates to `replace`, which deleted the
+duplicate `cut_content` coordinate math. `Node#cut`'s contract is now documented
+on the method: this node's token at 0, children from 1, and `cut` keeps exactly
+what `replace` removes. [07](07-fragment-cut-and-traversal.md) records the five
+issues found during that work but deliberately left alone.
 
 **Read [06](06-prosemirror-position-parity.md) before starting
 [03](03-slice-depths-and-invert.md).** It is a decision, not a fix, and 03's
@@ -27,11 +35,12 @@ implementation strategy depends on the answer. Open-depth fitting is ProseMirror
 own algorithm, written against a `+2` coordinate model that this library does not
 use. Building it against the current `+1` model means inventing a bespoke variant
 that cannot be ported from upstream and gets thrown away if the model later moves.
+06 is also where `Node#cut`'s contract gets revisited: 01 chose tree-local over
+content-space, and that choice was contested (see 06's dissent note). If 06 lands
+on Option B, `cut` moves to content space with everything else.
 
-Otherwise, do [01](01-position-primitives.md) first. It is the smallest and both
-[02](02-mark-and-attr-steps.md) and [03](03-slice-depths-and-invert.md) build on
-the primitives it fixes. After that, [02](02-mark-and-attr-steps.md) is
-independent and can go any time.
+[02](02-mark-and-attr-steps.md) and [03](03-slice-depths-and-invert.md) no longer
+depend on anything from 01, so 02 can go any time.
 
 [05](05-spec-position-helpers.md) is hygiene, not a fix. Do it whenever the churn
 gets annoying, or fold it into whichever PR touches those specs anyway. It becomes
@@ -40,11 +49,12 @@ since it would absorb that renumbering automatically.
 
 ## How these were grouped
 
-01 to 05 are the eight issues originally found, collapsed into five because
+01 to 05 were the eight issues originally found, collapsed into five because
 several share the same underlying machinery and splitting them would mean building
 the same thing twice. 06 is different in kind: it is an open decision about whether
 this library's coordinate system should match ProseMirror's at all, surfaced while
-confirming the PR #13 fix.
+confirming the PR #13 fix. 07 collects five issues found while doing 01, kept out
+of it to keep that PR focused.
 
 The merges:
 

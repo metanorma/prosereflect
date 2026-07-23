@@ -173,6 +173,31 @@ RSpec.describe Prosereflect::Text do
     end
   end
 
+  describe "#cut" do
+    it "reads offsets as character indices, not tree positions" do
+      # Text overrides Node#cut. A text node carries no token of its own, so
+      # there is no +1: offset 1 is the second character, where Node#cut's
+      # offset 1 would be its first child.
+      expect(described_class.create("abcd").cut(1, 3).text).to eq("bc")
+    end
+
+    it "returns a new node even for the full range" do
+      # Node#cut hands back `self` for the full range. Text never does, so the
+      # identity behaviour documented on Node#cut must not be assumed here.
+      text = described_class.create("abcd")
+
+      expect(text.cut(0, text.node_size)).not_to be(text)
+      expect(text.cut(0, text.node_size).text).to eq("abcd")
+      expect(text.cut).not_to be(text)
+    end
+
+    it "carries marks onto the cut node" do
+      text = described_class.new(text: "abcd", marks: [{ "type" => "bold" }])
+
+      expect(text.cut(1, 3).raw_marks.map(&:type)).to eq(%w[bold])
+    end
+  end
+
   describe "mark attributes" do
     it "preserves mark attributes in serialization" do
       text = described_class.create("Styled text", [
