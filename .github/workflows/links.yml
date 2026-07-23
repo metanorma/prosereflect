@@ -29,12 +29,13 @@ jobs:
         bundler-cache: true
         working-directory: docs
 
-    # Build under the site's baseurl (/prosereflect) so the emitted absolute
-    # links resolve against --root-dir _site during the file:// link check.
+    # Build under the site's baseurl (/prosereflect) so links resolve against
+    # --root-dir _site, with an empty url overlay so canonical/og links stay
+    # relative and are checked locally rather than hitting the production host.
     - name: Build site
       env:
         JEKYLL_ENV: production
-      run: bundle exec jekyll build --trace --destination _site/prosereflect
+      run: bundle exec jekyll build --trace --config _config.yml,_config_linkcheck.yml --destination _site/prosereflect
       working-directory: docs
 
     - name: Restore lychee cache
