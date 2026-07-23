@@ -19,19 +19,18 @@ module Prosereflect
       def get_map
         StepMap.new
       end
+
+      def to_json(*_args)
+        { "stepType" => step_type, "from" => @from, "to" => @to, "mark" => @mark.to_h }
+      end
     end
 
     # Add a mark to all content in a range
     class AddMarkStep < MarkStep
       def apply(doc)
-        return Result.fail("Invalid positions") if @from > @to || @from.negative?
+        return Result.fail("Invalid positions") if @from.negative? || @from > @to || @to > doc.node_size
 
-        begin
-          new_doc = add_mark_to_range(doc)
-          Result.ok(new_doc)
-        rescue StandardError => e
-          Result.fail(e.message)
-        end
+        Result.ok(doc.update_marks(@from, @to) { |marks| @mark.add_to_set(marks) })
       end
 
       def invert(_doc)
@@ -53,62 +52,18 @@ module Prosereflect
         "addMark"
       end
 
-      def to_json(*_args)
-        json = super
-        json["mark"] = @mark.to_h
-        json
-      end
-
       def self.from_json(_schema, json)
         mark = Prosereflect::Mark.from_h(json["mark"])
         new(json["from"], json["to"], mark)
-      end
-
-      private
-
-      def add_mark_to_range(doc)
-        new_content = doc.content.map { |node| apply_mark_to_node(node) }
-        doc.copy(new_content, doc.attrs.dup)
-      end
-
-      def apply_mark_to_node(node)
-        return node unless node.is_a?(Prosereflect::Text)
-
-        Prosereflect::Text.new(
-          text: node.text,
-          marks: (node.marks || []) + [@mark],
-          attrs: node.attrs.dup,
-        )
-      end
-
-      def remove_mark_from_range(doc)
-        new_content = doc.content.map { |node| remove_mark_from_node_single(node) }
-        doc.copy(new_content, doc.attrs.dup)
-      end
-
-      def remove_mark_from_node_single(node)
-        return node unless node.is_a?(Prosereflect::Text)
-
-        new_marks = (node.marks || []).reject { |m| m.type == @mark.type }
-        Prosereflect::Text.new(
-          text: node.text,
-          marks: new_marks,
-          attrs: node.attrs.dup,
-        )
       end
     end
 
     # Remove a mark from all content in a range
     class RemoveMarkStep < MarkStep
       def apply(doc)
-        return Result.fail("Invalid positions") if @from > @to || @from.negative?
+        return Result.fail("Invalid positions") if @from.negative? || @from > @to || @to > doc.node_size
 
-        begin
-          new_doc = remove_mark_from_range(doc)
-          Result.ok(new_doc)
-        rescue StandardError => e
-          Result.fail(e.message)
-        end
+        Result.ok(doc.update_marks(@from, @to) { |marks| @mark.remove_from_set(marks) })
       end
 
       def invert(_doc)
@@ -130,12 +85,6 @@ module Prosereflect
         "removeMark"
       end
 
-      def to_json(*_args)
-        json = super
-        json["mark"] = @mark.to_h
-        json
-      end
-
       def self.from_json(_schema, json)
         mark = Prosereflect::Mark.from_h(json["mark"])
         new(json["from"], json["to"], mark)
@@ -155,12 +104,7 @@ module Prosereflect
       def apply(doc)
         return Result.fail("Invalid position") if @pos.negative? || @pos > doc.node_size
 
-        begin
-          new_doc = add_mark_to_node(doc)
-          Result.ok(new_doc)
-        rescue StandardError => e
-          Result.fail(e.message)
-        end
+        Result.ok(doc.map_node_at(@pos) { |node| node.with_marks(@mark.add_to_set(node.raw_marks || [])) })
       end
 
       def get_map
@@ -186,22 +130,6 @@ module Prosereflect
         mark = Prosereflect::Mark.from_h(json["mark"])
         new(json["pos"], mark)
       end
-
-      private
-
-      def add_mark_to_node(doc)
-        new_content = doc.content.map { |node| add_mark_to_single_node(node) }
-        doc.copy(new_content, doc.attrs.dup)
-      end
-
-      def add_mark_to_single_node(node)
-        new_marks = (node.marks || []) + [@mark]
-        node.class.new(
-          content: node.content,
-          marks: new_marks,
-          attrs: node.attrs.dup,
-        )
-      end
     end
 
     # Remove mark from a specific node
@@ -217,12 +145,7 @@ module Prosereflect
       def apply(doc)
         return Result.fail("Invalid position") if @pos.negative? || @pos > doc.node_size
 
-        begin
-          new_doc = remove_mark_from_node(doc)
-          Result.ok(new_doc)
-        rescue StandardError => e
-          Result.fail(e.message)
-        end
+        Result.ok(doc.map_node_at(@pos) { |node| node.with_marks(@mark.remove_from_set(node.raw_marks || [])) })
       end
 
       def get_map
@@ -247,22 +170,6 @@ module Prosereflect
       def self.from_json(_schema, json)
         mark = Prosereflect::Mark.from_h(json["mark"])
         new(json["pos"], mark)
-      end
-
-      private
-
-      def remove_mark_from_node(doc)
-        new_content = doc.content.map { |node| remove_mark_from_single_node(node) }
-        doc.copy(new_content, doc.attrs.dup)
-      end
-
-      def remove_mark_from_single_node(node)
-        new_marks = (node.marks || []).reject { |m| m.type == @mark.type }
-        node.class.new(
-          content: node.content,
-          marks: new_marks,
-          attrs: node.attrs.dup,
-        )
       end
     end
   end

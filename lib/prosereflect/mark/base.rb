@@ -25,6 +25,15 @@ module Prosereflect
         new(type: "mark", attrs: attrs)
       end
 
+      # Runtime mark-set operations (no schema exclusion or rank; see schema/mark.rb).
+      def add_to_set(set)
+        set.reject { |m| m.type == type } + [self]
+      end
+
+      def remove_from_set(set)
+        set.reject { |m| m == self }
+      end
+
       # Convert to hash for serialization
       def to_h
         result = { "type" => type }

@@ -198,6 +198,17 @@ RSpec.describe Prosereflect::Text do
     end
   end
 
+  describe "#with_marks" do
+    it "rebuilds a text node with new marks, preserving the string" do
+      text = described_class.create("abc")
+      result = text.with_marks([Prosereflect::Mark::Bold.new])
+
+      expect(result.text).to eq("abc")
+      expect(result.raw_marks.map(&:type)).to eq(%w[bold])
+      expect(result).not_to be(text)
+    end
+  end
+
   describe "mark attributes" do
     it "preserves mark attributes in serialization" do
       text = described_class.create("Styled text", [

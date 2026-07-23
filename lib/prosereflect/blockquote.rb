@@ -20,6 +20,9 @@ module Prosereflect
     def initialize(attributes = {})
       attributes[:content] ||= []
       super
+
+      a = attributes[:attrs]
+      self.citation = a["citation"] if a && a["citation"]
     end
 
     def self.create(attrs = nil)

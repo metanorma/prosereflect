@@ -45,6 +45,12 @@ module Prosereflect
       self.class.new(text: txt[from...to], marks: raw_marks)
     end
 
+    # A text node stores its string in `text`, not `content`, so the generic copy
+    # would drop it. Preserve the string; new_content has no meaning for text.
+    def copy(_new_content = nil, new_attrs = attrs, new_marks = raw_marks)
+      self.class.new(text: text, attrs: new_attrs, marks: new_marks)
+    end
+
     # Check equality with another text node
     def eq?(other)
       return false unless other.is_a?(self.class)

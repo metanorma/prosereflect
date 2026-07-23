@@ -22,6 +22,13 @@ module Prosereflect
     def initialize(attributes = {})
       attributes[:content] = []
       super
+
+      return unless attributes[:attrs]
+
+      a = attributes[:attrs]
+      self.style = a["style"] if a["style"]
+      self.width = a["width"] if a["width"]
+      self.thickness = a["thickness"] if a["thickness"]
     end
 
     def self.create(attrs = nil)

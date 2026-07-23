@@ -24,6 +24,10 @@ module Prosereflect
         "language" => nil,
       }
       super
+
+      a = attributes[:attrs]
+      self.language = a["language"] if a["language"]
+      self.line_numbers = a["line_numbers"] unless a["line_numbers"].nil?
     end
 
     def self.create(attrs = nil)

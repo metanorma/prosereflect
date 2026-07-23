@@ -614,6 +614,122 @@ RSpec.describe Prosereflect::Node do
     end
   end
 
+  describe "position-targeted node access" do
+    # doc > [ paragraph > text "Hello", paragraph > text "Bye" ]
+    # doc token @0; para1 token @1 (size 6, spans [1,7)); para2 token @7 (size 4, spans [7,11)).
+    let(:doc) do
+      Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [
+          { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Hello" }] },
+          { "type" => "paragraph", "content" => [{ "type" => "text", "text" => "Bye" }] },
+        ],
+      )
+    end
+
+    describe "#node_at" do
+      it "returns the node whose token sits at the position" do
+        expect(doc.node_at(7).type).to eq("paragraph")
+        expect(doc.node_at(7).content.first.text).to eq("Bye")
+      end
+
+      it "returns self for position 0" do
+        expect(doc.node_at(0)).to be(doc)
+      end
+
+      it "returns the text node at its start position" do
+        # para1 token @1, its text child starts at @2
+        expect(doc.node_at(2).text).to eq("Hello")
+      end
+    end
+
+    describe "#map_node_at" do
+      it "rebuilds only the targeted nested node" do
+        result = doc.map_node_at(7) { |n| n.copy(n.content, { "align" => "center" }) }
+
+        expect(result.content[1].attrs).to eq({ "align" => "center" })
+        expect(result.content[0].attrs).to be_nil
+        expect(result.node_size).to eq(doc.node_size)
+      end
+
+      it "does not mutate the receiver" do
+        doc.map_node_at(7) { |n| n.copy(n.content, { "align" => "center" }) }
+        expect(doc.content[1].attrs).to be_nil
+      end
+
+      it "returns an equivalent tree when the position hits no node token" do
+        # a position strictly inside "Hello" characters is not a node boundary
+        expect(doc.map_node_at(4) { |n| n.with_marks([Prosereflect::Mark::Bold.new]) }.to_h)
+          .to eq(doc.to_h)
+      end
+    end
+  end
+
+  describe "#update_marks" do
+    let(:bold) { Prosereflect::Mark::Bold.new }
+
+    def para(*children)
+      p = Prosereflect::Paragraph.new
+      p.content = children
+      p
+    end
+
+    def doc_with(*paragraphs)
+      d = Prosereflect::Document.new
+      d.content = paragraphs
+      d
+    end
+
+    it "marks only the covered characters of a text node, splitting it" do
+      # para token @1, "Hello" spans [2,7); mark "ell" = doc [3,6)
+      doc = doc_with(para(Prosereflect::Text.new(text: "Hello")))
+      result = doc.update_marks(3, 6) { |marks| bold.add_to_set(marks) }
+
+      pieces = result.content[0].content
+      expect(pieces.map(&:text)).to eq(%w[H ell o])
+      expect(pieces.map { |t| (t.raw_marks || []).map(&:type) }).to eq([[], %w[bold], []])
+      expect(result.node_size).to eq(doc.node_size)
+    end
+
+    it "marks across adjacent text children and merges equal-mark runs" do
+      # "ab" then bold "cd"; marking the whole run dedups bold and merges to one node
+      doc = doc_with(para(
+                       Prosereflect::Text.new(text: "ab"),
+                       Prosereflect::Text.new(text: "cd", marks: [{ "type" => "bold" }]),
+                     ))
+      # para @1: "ab" [2,4), "cd" [4,6); mark [2,6)
+      result = doc.update_marks(2, 6) { |marks| bold.add_to_set(marks) }
+
+      pieces = result.content[0].content
+      expect(pieces.map(&:text)).to eq(%w[abcd])
+      expect((pieces.first.raw_marks || []).map(&:type)).to eq(%w[bold])
+    end
+
+    it "removing a mark normalizes a newly-equal boundary into one node" do
+      doc = doc_with(para(
+                       Prosereflect::Text.new(text: "ab"),
+                       Prosereflect::Text.new(text: "cd", marks: [{ "type" => "bold" }]),
+                     ))
+      # remove bold from "cd" only ([4,6)); result "ab" + "cd" both unmarked -> "abcd"
+      result = doc.update_marks(4, 6) { |marks| bold.remove_from_set(marks) }
+
+      expect(result.content[0].content.map(&:text)).to eq(%w[abcd])
+      expect(result.content[0].content.first.raw_marks || []).to eq([])
+    end
+
+    it "does not mutate the receiver" do
+      doc = doc_with(para(Prosereflect::Text.new(text: "Hello")))
+      doc.update_marks(3, 6) { |marks| bold.add_to_set(marks) }
+      expect(doc.content[0].content.first.text).to eq("Hello")
+      expect(doc.content[0].content.first.raw_marks).to be_nil
+    end
+
+    it "returns self-equivalent output for an empty range" do
+      doc = doc_with(para(Prosereflect::Text.new(text: "Hello")))
+      expect(doc.update_marks(3, 3) { |marks| bold.add_to_set(marks) }.to_h).to eq(doc.to_h)
+    end
+  end
+
   describe "#eq?" do
     it "returns true for structurally equal nodes" do
       n1 = described_class.create("node")
@@ -641,6 +757,80 @@ RSpec.describe Prosereflect::Node do
       copy = node.copy([Prosereflect::Text.create("new")])
       expect(copy.content.length).to eq(1)
       expect(node.content).to be_empty
+    end
+  end
+
+  describe "#copy preserves typed attributes" do
+    it "keeps a heading's level" do
+      heading = Prosereflect::Parser.parse_node(
+        "type" => "heading", "attrs" => { "level" => 2 },
+        "content" => [{ "type" => "text", "text" => "x" }]
+      )
+      expect(heading.copy(heading.content).to_h["attrs"]).to eq({ "level" => 2 })
+    end
+
+    it "keeps an image's src and alt" do
+      image = Prosereflect::Parser.parse_node("type" => "image", "attrs" => { "src" => "s", "alt" => "a" })
+      expect(image.copy(image.content).to_h["attrs"]).to eq({ "src" => "s", "alt" => "a" })
+    end
+
+    it "keeps a code_block's language" do
+      cb = Prosereflect::Parser.parse_node(
+        "type" => "code_block", "attrs" => { "language" => "ruby" },
+        "content" => [{ "type" => "text", "text" => "x" }]
+      )
+      expect(cb.copy(cb.content).to_h["attrs"]).to eq({ "language" => "ruby" })
+    end
+
+    it "keeps a blockquote's citation" do
+      bq = Prosereflect::Parser.parse_node(
+        "type" => "blockquote", "attrs" => { "citation" => "src" },
+        "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "x" }] }]
+      )
+      expect(bq.copy(bq.content).to_h["attrs"]).to eq({ "citation" => "src" })
+    end
+
+    it "keeps a horizontal_rule's style, width and thickness" do
+      hr = Prosereflect::Parser.parse_node(
+        "type" => "horizontal_rule",
+        "attrs" => { "style" => "solid", "width" => "2px", "thickness" => 1 },
+      )
+      expect(hr.copy(hr.content).to_h["attrs"]).to eq({ "style" => "solid", "width" => "2px", "thickness" => 1 })
+    end
+
+    it "keeps a table_header's scope, abbr and colspan" do
+      th = Prosereflect::Parser.parse_node(
+        "type" => "table_header", "attrs" => { "scope" => "col", "abbr" => "x", "colspan" => 2 },
+        "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "x" }] }]
+      )
+      expect(th.copy(th.content).to_h["attrs"]).to eq({ "scope" => "col", "abbr" => "x", "colspan" => 2 })
+    end
+
+    it "keeps a code_block_wrapper's line_numbers" do
+      cbw = Prosereflect::Parser.parse_node(
+        "type" => "code_block_wrapper", "attrs" => { "line_numbers" => true },
+        "content" => []
+      )
+      expect(cbw.copy(cbw.content).to_h["attrs"]).to eq({ "line_numbers" => true })
+    end
+  end
+
+  describe "#with_marks" do
+    it "rebuilds a non-text node with new marks, preserving content and attrs" do
+      para = Prosereflect::Paragraph.new(attrs: { "align" => "left" })
+      para.content = [Prosereflect::Text.new(text: "x")]
+      result = para.with_marks([Prosereflect::Mark::Bold.new])
+
+      expect(result.raw_marks.map(&:type)).to eq(%w[bold])
+      expect(result.attrs).to eq({ "align" => "left" })
+      expect(result.content.first.text).to eq("x")
+      expect(result).not_to be(para)
+    end
+
+    it "does not mutate the receiver" do
+      para = Prosereflect::Paragraph.new
+      para.with_marks([Prosereflect::Mark::Bold.new])
+      expect(para.raw_marks).to be_nil
     end
   end
 end
