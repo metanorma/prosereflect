@@ -1,0 +1,5 @@
+# Overlay config for the built-site link check only.
+# Empty url makes canonical/og links root-relative (/prosereflect/...) so lychee
+# validates them as local links against _site instead of hitting the production
+# host, which the check does not serve.
+url: ""
