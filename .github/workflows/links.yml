@@ -29,9 +29,10 @@ jobs:
         bundler-cache: true
         working-directory: docs
 
-    # Build under the site's baseurl (/prosereflect) so links resolve against
-    # --root-dir _site, with an empty url overlay so canonical/og links stay
-    # relative and are checked locally rather than hitting the production host.
+    # Build into a subdir matching _config.yml's baseurl (/prosereflect) so those
+    # links resolve against --root-dir _site, with an empty-url overlay so
+    # canonical/og links stay root-relative and are checked locally rather than
+    # hitting the production host.
     - name: Build site
       env:
         JEKYLL_ENV: production
