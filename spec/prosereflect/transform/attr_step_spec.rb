@@ -85,4 +85,12 @@ RSpec.describe Prosereflect::Transform::AttrStep do
     expect(result).to be_ok
     expect(result.doc.content[0].content[0].to_h["attrs"]).to eq({ "src" => "new", "alt" => "a" })
   end
+
+  it "fails when attrs is not a hash (malformed input)" do
+    doc = Prosereflect::Parser.parse_document(
+      "type" => "doc",
+      "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "x" }] }],
+    )
+    expect(described_class.new(1, nil).apply(doc)).not_to be_ok
+  end
 end

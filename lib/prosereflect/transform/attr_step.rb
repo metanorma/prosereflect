@@ -17,6 +17,7 @@ module Prosereflect
 
       def apply(doc)
         return Result.fail("Invalid position") if @pos.negative? || @pos > doc.node_size
+        return Result.fail("Invalid attrs") unless @attrs.is_a?(Hash)
 
         Result.ok(set_node_attrs(doc))
       end

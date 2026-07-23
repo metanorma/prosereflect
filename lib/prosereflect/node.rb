@@ -131,23 +131,11 @@ module Prosereflect
       elsif value.is_a?(Array)
         @marks = value.map do |v|
           if v.is_a?(Hash)
-            type = v["type"] || v[:type]
-            attrs = v["attrs"] || v[:attrs]
-            begin
-              mark_class = Prosereflect::Mark.const_get(type.to_s.capitalize)
-              mark_class.new(attrs: attrs)
-            rescue NameError
-              Mark::Base.new(type: type, attrs: attrs)
-            end
+            Prosereflect::Mark.from_h(v)
           elsif v.is_a?(Mark::Base)
             v
           elsif v.respond_to?(:type)
-            begin
-              mark_class = Prosereflect::Mark.const_get(v.type.to_s.capitalize)
-              mark_class.new(attrs: v.attrs)
-            rescue NameError
-              Mark::Base.new(type: v.type, attrs: v.attrs)
-            end
+            Prosereflect::Mark.from_h("type" => v.type, "attrs" => v.attrs)
           else
             raise ArgumentError, "Invalid mark type: #{v.class}"
           end

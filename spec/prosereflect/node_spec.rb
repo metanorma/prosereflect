@@ -47,6 +47,23 @@ RSpec.describe Prosereflect::Node do
     end
   end
 
+  describe "#marks= reconstruction" do
+    it "builds hash marks without resolving unrelated Ruby constants" do
+      node = Prosereflect::Text.new(text: "x")
+      node.marks = [{ "type" => "string" }]
+
+      expect(node.raw_marks.first).to be_a(Prosereflect::Mark::Base)
+      expect(node.raw_marks.map(&:type)).to eq(%w[string])
+    end
+
+    it "still builds known mark subclasses" do
+      node = Prosereflect::Text.new(text: "x")
+      node.marks = [{ "type" => "bold" }]
+
+      expect(node.raw_marks.first).to be_a(Prosereflect::Mark::Bold)
+    end
+  end
+
   describe "#to_h" do
     it "creates a hash representation with basic properties" do
       node = described_class.new({ "type" => "test_node" })
