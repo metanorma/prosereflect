@@ -734,6 +734,28 @@ RSpec.describe Prosereflect::Node do
       expect(result.content[0].content.first.raw_marks || []).to eq([])
     end
 
+    it "leaves untouched siblings outside the range unmerged" do
+      doc = doc_with(para(
+                       Prosereflect::Text.new(text: "aa"),
+                       Prosereflect::Text.new(text: "bb"),
+                       Prosereflect::Text.new(text: "cc"),
+                     ))
+      # para @1: "aa" [2,4), "bb" [4,6), "cc" [6,8); mark only "aa"
+      result = doc.update_marks(2, 4) { |marks| bold.add_to_set(marks) }
+
+      # "bb" and "cc" sit outside the edit, so the step must not restructure them.
+      expect(result.content[0].content.map(&:text)).to eq(%w[aa bb cc])
+    end
+
+    it "keeps a text node's attrs when the mark splits it" do
+      doc = doc_with(para(Prosereflect::Text.new(text: "Hello", attrs: { "lang" => "en" })))
+      result = doc.update_marks(3, 6) { |marks| bold.add_to_set(marks) }
+
+      pieces = result.content[0].content
+      expect(pieces.map(&:text)).to eq(%w[H ell o])
+      expect(pieces.map(&:attrs)).to all(eq({ "lang" => "en" }))
+    end
+
     it "does not mutate the receiver" do
       doc = doc_with(para(Prosereflect::Text.new(text: "Hello")))
       doc.update_marks(3, 6) { |marks| bold.add_to_set(marks) }

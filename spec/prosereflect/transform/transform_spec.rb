@@ -134,6 +134,57 @@ RSpec.describe Prosereflect::Transform::Transform do
       result = transform.rollback
       expect(result).to eq(transform)
     end
+
+    # doc @0; paragraph token @1; text "hello" spans [2,7).
+    def linked_doc
+      Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [{ "type" => "paragraph",
+                        "content" => [{ "type" => "text", "text" => "hello",
+                                        "marks" => [{ "type" => "link",
+                                                      "attrs" => { "href" => "old" } }] }] }],
+      )
+    end
+
+    def text_marks(document)
+      document.content[0].content[0].raw_marks
+    end
+
+    it "keeps the steps that succeeded when a later one fails" do
+      plain = Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "x" }] }],
+      )
+      transform = described_class.new(plain)
+      transform.add_step(Prosereflect::Transform::AttrStep.new(1, { "align" => "left" }))
+      transform.add_step(Prosereflect::Transform::AttrStep.new(-5, { "bad" => true }))
+
+      expect { transform.apply }.to raise_error(Prosereflect::Transform::Transform::ApplyError)
+      # Read through a clone: Transform#doc re-runs apply, which would raise again.
+      expect(transform.clone.doc.content[0].attrs).to eq({ "align" => "left" })
+    end
+
+    it "undoes a node mark that was added" do
+      transform = described_class.new(linked_doc)
+      transform.add_step(
+        Prosereflect::Transform::AddNodeMarkStep.new(2, Prosereflect::Mark::Bold.new),
+      )
+      transform.apply
+
+      expect(text_marks(transform.rollback.doc).map(&:type)).to eq(%w[link])
+    end
+
+    it "undoes a same-type replacement back to the original href" do
+      transform = described_class.new(linked_doc)
+      transform.add_step(
+        Prosereflect::Transform::AddNodeMarkStep.new(
+          2, Prosereflect::Mark::Link.new(attrs: { "href" => "new" })
+        ),
+      )
+      transform.apply
+
+      expect(text_marks(transform.rollback.doc).map(&:attrs)).to eq([{ "href" => "old" }])
+    end
   end
 
   describe "maps" do

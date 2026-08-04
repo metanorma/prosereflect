@@ -191,6 +191,11 @@ RSpec.describe Prosereflect::Text do
       expect(text.cut).not_to be(text)
     end
 
+    it "carries attrs onto the cut node" do
+      text = described_class.new(text: "abcd", attrs: { "lang" => "en" })
+      expect(text.cut(1, 3).attrs).to eq({ "lang" => "en" })
+    end
+
     it "carries marks onto the cut node" do
       text = described_class.new(text: "abcd", marks: [{ "type" => "bold" }])
 

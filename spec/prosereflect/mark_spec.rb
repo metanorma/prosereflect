@@ -68,5 +68,44 @@ RSpec.describe Prosereflect::Mark do
         expect(result.map(&:attrs)).to eq([{ "href" => "b" }])
       end
     end
+
+    describe "#is_in_set?" do
+      it "finds an equal mark" do
+        expect(bold.is_in_set?([italic, bold])).to be true
+      end
+
+      it "does not match a same-type mark with different attrs" do
+        expect(link_a.is_in_set?([link_b])).to be false
+      end
+
+      it "is false for an empty set" do
+        expect(bold.is_in_set?([])).to be false
+      end
+
+      it "agrees with remove_from_set about what is removable" do
+        set = [link_a, bold]
+        expect(link_a.is_in_set?(set)).to be true
+        expect(link_a.remove_from_set(set).length).to eq(set.length - 1)
+      end
+    end
+
+    describe "#displaced_from" do
+      it "returns the same-type mark add_to_set would replace" do
+        expect(link_b.displaced_from([bold, link_a]).attrs).to eq({ "href" => "a" })
+      end
+
+      it "returns nil when no mark of that type is present" do
+        expect(link_a.displaced_from([bold, italic])).to be_nil
+      end
+
+      it "returns nil for an empty set" do
+        expect(bold.displaced_from([])).to be_nil
+      end
+
+      it "reports exactly what add_to_set drops" do
+        set = [bold, link_a]
+        expect(link_b.add_to_set(set)).not_to include(link_b.displaced_from(set))
+      end
+    end
   end
 end

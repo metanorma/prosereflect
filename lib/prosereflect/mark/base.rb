@@ -34,6 +34,18 @@ module Prosereflect
         set.reject { |m| m == self }
       end
 
+      # Same equality remove_from_set uses, so "in the set" and "removable" can
+      # never disagree.
+      def is_in_set?(set)
+        set.any?(self)
+      end
+
+      # The mark add_to_set would push out, or nil when it would push out
+      # nothing. Lives here so the rule stays next to the one that applies it.
+      def displaced_from(set)
+        set.find { |m| m.type == type }
+      end
+
       # Convert to hash for serialization
       def to_h
         result = { "type" => type }

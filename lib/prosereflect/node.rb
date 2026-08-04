@@ -337,11 +337,29 @@ module Prosereflect
     def update_marks(from, to, &transform)
       return self unless content && to > from
 
-      spliced = []
+      before = []
+      touched = []
+      after = []
       each_child_span do |child, _index, child_start, child_end|
-        spliced.concat(remark_child(child, from, to, child_start, child_end, &transform))
+        if child_end <= from
+          before << child
+        elsif child_start >= to
+          after << child
+        else
+          touched.concat(remark_child(child, from, to, child_start, child_end, &transform))
+        end
       end
-      copy(merge_adjacent_text(spliced))
+
+      # Re-marking replaces marks without moving content, so the edit's two
+      # only places a merge can newly become possible. The immediate neighbour on
+      # each side joins the merged run; siblings past them are carried across
+      # untouched. Note this is a wider rule than splice's, which merges only the
+      # trimmed edges and the inserted nodes: splice removes content, so its
+      # surviving neighbours were already non-adjacent and normalizing them would
+      # restructure parts of the document the edit never reached.
+      head = before.pop
+      tail = after.shift
+      copy(before + merge_adjacent_text([head, *touched, tail].compact) + after)
     end
 
     # Check structural equality with another node.
@@ -476,12 +494,11 @@ module Prosereflect
       child.replace(1, offset, [])
     end
 
-    # The re-marked replacement for one child of update_marks: unchanged if it does not
-    # overlap [from, to); a text child split at the boundaries with the covered piece
-    # re-marked; a covered inline leaf re-marked whole; an element child recursed into.
+    # The re-marked replacement for one child of update_marks, which only ever
+    # passes children overlapping [from, to): a text child split at the boundaries
+    # with the covered piece re-marked; a covered inline leaf re-marked whole; an
+    # element child recursed into.
     def remark_child(child, from, to, child_start, child_end, &transform)
-      return [child] if child_end <= from || child_start >= to
-
       if child.text?
         remark_text(child, from, to, child_start, child_end, &transform)
       elsif child.leaf? && child.inline?
@@ -501,14 +518,15 @@ module Prosereflect
     end
 
     # Drops empty text (a trimmed edge cut to "") and joins same-mark text into
-    # one node. Applied only to the spliced run -- see splice for why untouched
-    # children are deliberately left unmerged.
+    # one node. Applied only to the run the caller hands it -- see splice and
+    # update_marks for why untouched children are deliberately left unmerged.
     def merge_adjacent_text(nodes)
       nodes.reject { |node| node.text? && node.text_content.empty? }
         .each_with_object([]) do |node, result|
           previous = result.last
           if mergeable_text?(previous, node)
             result[-1] = previous.class.new(text: previous.text + node.text,
+                                            attrs: previous.attrs,
                                             marks: previous.raw_marks)
           else
             result << node
@@ -516,12 +534,14 @@ module Prosereflect
         end
     end
 
-    # Compares serialized marks, since unmarked text is represented as both nil
-    # and [] and the two must not be treated as different marks.
+    # Normalizes both sides before comparing, since absence is spelled two ways:
+    # unmarked text is nil or [], and attribute-less text is nil or {}. Neither
+    # pair may read as a difference, or equivalent runs would refuse to merge.
     def mergeable_text?(previous, node)
       return false unless previous&.text? && node.text?
 
-      (previous.marks || []) == (node.marks || [])
+      (previous.marks || []) == (node.marks || []) &&
+        (previous.attrs || {}) == (node.attrs || {})
     end
 
     def build_path_for_pos(pos, path, index = 0, start_offset = 0)

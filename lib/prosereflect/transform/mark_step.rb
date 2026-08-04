@@ -54,7 +54,7 @@ module Prosereflect
 
       def self.from_json(_schema, json)
         mark = Prosereflect::Mark.from_h(json["mark"])
-        new(json["from"], json["to"], mark)
+        new(integer_position(json, "from"), integer_position(json, "to"), mark)
       end
     end
 
@@ -87,11 +87,12 @@ module Prosereflect
 
       def self.from_json(_schema, json)
         mark = Prosereflect::Mark.from_h(json["mark"])
-        new(json["from"], json["to"], mark)
+        new(integer_position(json, "from"), integer_position(json, "to"), mark)
       end
     end
 
-    # Add mark to a specific node (not range-based)
+    # Add mark to a specific node (not range-based).
+    # `pos` addresses a node token, so pos 0 addresses the document node itself.
     class AddNodeMarkStep < Step
       attr_reader :pos, :mark
 
@@ -102,7 +103,7 @@ module Prosereflect
       end
 
       def apply(doc)
-        return Result.fail("Invalid position") if @pos.negative? || @pos > doc.node_size
+        return Result.fail("Invalid position") unless position_in_bounds?(@pos, doc)
 
         Result.ok(doc.map_node_at(@pos) { |node| node.with_marks(@mark.add_to_set(node.raw_marks || [])) })
       end
@@ -111,8 +112,16 @@ module Prosereflect
         StepMap.new
       end
 
-      def invert(_doc)
-        RemoveNodeMarkStep.new(@pos, @mark)
+      # `doc` is the document as it stood before this step ran. Adding a mark of a
+      # type the node already carries replaces the old one, and only the pre-step
+      # tree still knows what was replaced. Re-adding the displaced mark restores
+      # it; when the node already carried this exact mark the step changed
+      # nothing, and re-adding it undoes nothing, which is the right inverse.
+      def invert(doc)
+        displaced = @mark.displaced_from(doc.node_at(@pos)&.raw_marks || [])
+        return RemoveNodeMarkStep.new(@pos, @mark) unless displaced
+
+        AddNodeMarkStep.new(@pos, displaced)
       end
 
       def step_type
@@ -128,11 +137,12 @@ module Prosereflect
 
       def self.from_json(_schema, json)
         mark = Prosereflect::Mark.from_h(json["mark"])
-        new(json["pos"], mark)
+        new(integer_position(json, "pos"), mark)
       end
     end
 
-    # Remove mark from a specific node
+    # Remove mark from a specific node.
+    # `pos` addresses a node token, so pos 0 addresses the document node itself.
     class RemoveNodeMarkStep < Step
       attr_reader :pos, :mark
 
@@ -143,7 +153,7 @@ module Prosereflect
       end
 
       def apply(doc)
-        return Result.fail("Invalid position") if @pos.negative? || @pos > doc.node_size
+        return Result.fail("Invalid position") unless position_in_bounds?(@pos, doc)
 
         Result.ok(doc.map_node_at(@pos) { |node| node.with_marks(@mark.remove_from_set(node.raw_marks || [])) })
       end
@@ -152,7 +162,13 @@ module Prosereflect
         StepMap.new
       end
 
-      def invert(_doc)
+      # `doc` is the document as it stood before this step ran. Removing a mark
+      # the node never carried changes nothing, and the inverse of changing
+      # nothing is this same step, not an add that would inject the mark.
+      def invert(doc)
+        node = doc.node_at(@pos)
+        return self unless node && @mark.is_in_set?(node.raw_marks || [])
+
         AddNodeMarkStep.new(@pos, @mark)
       end
 
@@ -169,7 +185,7 @@ module Prosereflect
 
       def self.from_json(_schema, json)
         mark = Prosereflect::Mark.from_h(json["mark"])
-        new(json["pos"], mark)
+        new(integer_position(json, "pos"), mark)
       end
     end
   end

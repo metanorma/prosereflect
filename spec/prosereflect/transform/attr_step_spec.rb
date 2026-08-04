@@ -93,4 +93,16 @@ RSpec.describe Prosereflect::Transform::AttrStep do
     )
     expect(described_class.new(1, nil).apply(doc)).not_to be_ok
   end
+
+  it "fails at a position one past the last node token" do
+    doc = two_paras
+    expect(described_class.new(doc.node_size, { "align" => "center" }).apply(doc)).not_to be_ok
+    expect(described_class.new(doc.node_size - 1, { "align" => "center" }).apply(doc)).to be_ok
+  end
+
+  it "rejects a non-integer position at parse time" do
+    expect do
+      described_class.from_json(nil, { "pos" => "3", "attrs" => { "align" => "center" } })
+    end.to raise_error(ArgumentError, /pos/)
+  end
 end

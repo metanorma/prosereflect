@@ -5,7 +5,15 @@ require_relative "step_map"
 
 module Prosereflect
   module Transform
-    # Set or remove attributes on a node at a position
+    # Set or remove attributes on a node at a position.
+    #
+    # `pos` addresses a node token, so pos 0 addresses the document node itself.
+    #
+    # A node class that rebuilds `attrs` in its own `to_h` keeps only the keys it
+    # declares, so keys this step sets outside that set do not survive
+    # serialization. CodeBlockWrapper is one such class. The step reports success
+    # either way; it sets what it was asked to set and leaves each node class to
+    # decide what it serializes.
     class AttrStep < Step
       attr_reader :pos, :attrs
 
@@ -16,7 +24,7 @@ module Prosereflect
       end
 
       def apply(doc)
-        return Result.fail("Invalid position") if @pos.negative? || @pos > doc.node_size
+        return Result.fail("Invalid position") unless position_in_bounds?(@pos, doc)
         return Result.fail("Invalid attrs") unless @attrs.is_a?(Hash)
 
         Result.ok(set_node_attrs(doc))
@@ -44,7 +52,7 @@ module Prosereflect
       end
 
       def self.from_json(_schema, json)
-        new(json["pos"], json["attrs"])
+        new(integer_position(json, "pos"), json["attrs"])
       end
 
       private
@@ -109,13 +117,14 @@ module Prosereflect
       private
 
       def set_doc_attrs(doc)
-        new_attrs = doc.attrs.merge(@attrs).compact
+        new_attrs = (doc.attrs || {}).merge(@attrs).compact
         doc.class.new(content: doc.content, attrs: new_attrs)
       end
 
       def get_old_doc_attrs(doc)
+        current = doc.attrs || {}
         @attrs.keys.each_with_object({}) do |key, old|
-          old[key] = doc.attrs[key] if doc.attrs.key?(key)
+          old[key] = current[key] if current.key?(key)
         end
       end
     end
