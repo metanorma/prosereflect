@@ -68,9 +68,12 @@ module Prosereflect
 
       # Apply all accumulated steps to the document
       # Returns self for chaining
+      # Replays from the original document, so calling apply (or doc) again is
+      # idempotent instead of compounding the same steps onto prior output.
       # Assigns after each step, so a later failure leaves the steps that already
       # succeeded applied rather than discarding them.
       def apply
+        @doc = @original_doc
         @steps.each { |step| @doc = apply_step(@doc, step) }
         self
       end

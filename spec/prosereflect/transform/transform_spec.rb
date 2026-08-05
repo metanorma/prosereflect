@@ -164,6 +164,18 @@ RSpec.describe Prosereflect::Transform::Transform do
       expect(transform.clone.doc.content[0].attrs).to eq({ "align" => "left" })
     end
 
+    it "is idempotent when doc is read more than once" do
+      plain = Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "hello" }] }],
+      )
+      transform = described_class.new(plain)
+      transform.insert(1, Prosereflect::Text.new(text: "X"))
+
+      first = transform.doc.to_h
+      expect(transform.doc.to_h).to eq(first)
+    end
+
     it "undoes a node mark that was added" do
       transform = described_class.new(linked_doc)
       transform.add_step(
