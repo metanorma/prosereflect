@@ -176,6 +176,23 @@ RSpec.describe Prosereflect::Transform::Transform do
       expect(transform.doc.to_h).to eq(first)
     end
 
+    it "applies each step exactly once across read-add-read sequences" do
+      plain = Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "hello" }] }],
+      )
+      transform = described_class.new(plain)
+      transform.insert(1, Prosereflect::Text.new(text: "X"))
+      transform.doc
+      transform.insert(1, Prosereflect::Text.new(text: "Y"))
+
+      # Each insert lands exactly once: compounding would duplicate "X".
+      children = transform.doc.content
+      expect(children.size).to eq(3)
+      expect(children[0].text).to eq("Y")
+      expect(children[1].text).to eq("X")
+    end
+
     it "undoes a node mark that was added" do
       transform = described_class.new(linked_doc)
       transform.add_step(
