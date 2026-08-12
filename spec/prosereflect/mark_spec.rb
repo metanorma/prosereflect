@@ -39,6 +39,7 @@ RSpec.describe Prosereflect::Mark do
     let(:italic) { Prosereflect::Mark::Italic.new }
     let(:link_a) { Prosereflect::Mark::Link.new(attrs: { "href" => "a" }) }
     let(:link_b) { Prosereflect::Mark::Link.new(attrs: { "href" => "b" }) }
+    let(:link_c) { Prosereflect::Mark::Link.new(attrs: { "href" => "c" }) }
 
     describe "#add_to_set" do
       it "appends a new mark" do
@@ -47,14 +48,34 @@ RSpec.describe Prosereflect::Mark do
 
       it "replaces a same-type mark (re-adding a link with a new href)" do
         result = link_b.add_to_set([link_a, bold])
-        expect(result.map(&:type)).to eq(%w[bold link])
-        expect(result.last.attrs).to eq({ "href" => "b" })
+        expect(result.map(&:type)).to eq(%w[link bold])
+        expect(result.first.attrs).to eq({ "href" => "b" })
       end
 
-      it "does not mutate the input set" do
+      it "replaces in the middle of a set without disturbing its neighbours" do
+        result = link_b.add_to_set([bold, link_a, italic])
+        expect(result.map(&:type)).to eq(%w[bold link italic])
+        expect(result[1].attrs).to eq({ "href" => "b" })
+      end
+
+      # A set can arrive holding two marks of one type; nothing deduplicates on the way in.
+      it "collapses duplicate same-type marks to one" do
+        result = link_b.add_to_set([link_a, bold, link_c])
+        expect(result.map(&:type)).to eq(%w[link bold])
+        expect(result.first.attrs).to eq({ "href" => "b" })
+      end
+
+      it "does not mutate the input set when appending" do
         set = [italic]
         bold.add_to_set(set)
         expect(set.map(&:type)).to eq(%w[italic])
+      end
+
+      it "does not mutate the input set when replacing" do
+        set = [link_a, bold]
+        link_b.add_to_set(set)
+        expect(set.map(&:type)).to eq(%w[link bold])
+        expect(set.first.attrs).to eq({ "href" => "a" })
       end
     end
 

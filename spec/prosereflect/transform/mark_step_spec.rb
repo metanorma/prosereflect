@@ -205,8 +205,7 @@ RSpec.describe "mark steps" do # rubocop:disable RSpec/DescribeClass
         applied = step.apply(doc).doc
         restored = step.invert(doc).apply(applied).doc
 
-        # Assert the mark itself, not the whole document: add_to_set appends
-        # rather than replacing in place, so a multi-mark node returns reordered.
+        expect(restored.to_h).to eq(doc.to_h)
         expect(text_marks(restored).map(&:attrs)).to eq([{ "href" => "old" }])
       end
 
@@ -311,6 +310,156 @@ RSpec.describe "mark steps" do # rubocop:disable RSpec/DescribeClass
         # Position 2 lands inside the text node's characters, on no node token.
         expect(described_class.new(2, bold).invert(doc)).to be_a(described_class)
       end
+    end
+  end
+
+  # Undo is a round-trip property, so it is tested as one: apply the step, invert it
+  # against the document as it stood, apply that, and compare the whole document. One
+  # example per node shape -- a single happy path is how the reordering below survived.
+  describe "node-mark undo round trip" do
+    # doc @0; paragraph token @1; the inline child's token @2.
+    def image_doc(marks)
+      Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [{ "type" => "paragraph",
+                        "content" => [{ "type" => "image", "attrs" => { "src" => "a.png" },
+                                        "marks" => marks }] }],
+      )
+    end
+
+    # doc @0; paragraph token @1; the text node's token @2.
+    def text_doc
+      Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [{ "type" => "paragraph", "content" => [{ "type" => "text", "text" => "hi" }] }],
+      )
+    end
+
+    def link(href)
+      Prosereflect::Mark::Link.new(attrs: { "href" => href })
+    end
+
+    def link_h(href)
+      { "type" => "link", "attrs" => { "href" => href } }
+    end
+
+    def round_trip(doc, step)
+      applied = step.apply(doc)
+      expect(applied).to be_ok
+      undone = step.invert(doc).apply(applied.doc)
+      expect(undone).to be_ok
+      undone.doc
+    end
+
+    def expect_exact(doc, step)
+      expect(round_trip(doc, step).to_h).to eq(doc.to_h)
+    end
+
+    def add_mark(pos, mark)
+      Prosereflect::Transform::AddNodeMarkStep.new(pos, mark)
+    end
+
+    def remove_mark(pos, mark)
+      Prosereflect::Transform::RemoveNodeMarkStep.new(pos, mark)
+    end
+
+    it "restores a mark added to an unmarked node" do
+      expect_exact(image_doc([]), add_mark(2, Prosereflect::Mark::Bold.new))
+    end
+
+    it "restores a mark added beside a different-type mark" do
+      expect_exact(image_doc([{ "type" => "bold" }]), add_mark(2, Prosereflect::Mark::Italic.new))
+    end
+
+    it "restores re-adding a mark the node already carries" do
+      expect_exact(image_doc([{ "type" => "bold" }]), add_mark(2, Prosereflect::Mark::Bold.new))
+    end
+
+    it "restores a replaced link when it is the only mark" do
+      expect_exact(image_doc([link_h("old")]), add_mark(2, link("new")))
+    end
+
+    it "restores a replaced link when it is first of two" do
+      expect_exact(image_doc([link_h("old"), { "type" => "bold" }]), add_mark(2, link("new")))
+    end
+
+    it "restores a replaced link when it is in the middle of three" do
+      expect_exact(image_doc([{ "type" => "bold" }, link_h("old"), { "type" => "italic" }]),
+                   add_mark(2, link("new")))
+    end
+
+    it "restores a removal that removed nothing" do
+      expect_exact(image_doc([{ "type" => "bold" }]), remove_mark(2, Prosereflect::Mark::Italic.new))
+    end
+
+    it "restores the removal of the node's only mark" do
+      expect_exact(image_doc([{ "type" => "bold" }]), remove_mark(2, Prosereflect::Mark::Bold.new))
+    end
+
+    it "restores a mark on a text node" do
+      expect_exact(text_doc, add_mark(2, Prosereflect::Mark::Bold.new))
+    end
+
+    it "restores a mark on a block node" do
+      expect_exact(text_doc, add_mark(1, Prosereflect::Mark::Bold.new))
+    end
+
+    it "restores a mark on the document node itself" do
+      expect_exact(text_doc, add_mark(0, Prosereflect::Mark::Bold.new))
+    end
+
+    # The one shape that cannot round-trip exactly, pinned at the property it does have.
+    # Undo of a removal re-adds the mark, and a re-added mark has no earlier position to
+    # take -- add_to_set can only append when the type is absent. Restoring the index
+    # would mean carrying it in the inverse step or ranking mark types; both are design
+    # changes rather than fixes, so the gap is recorded here instead of hidden.
+    it "restores a removed middle mark as a set but not at its old index" do
+      doc = image_doc([{ "type" => "bold" }, link_h("a"), { "type" => "italic" }])
+      undone = round_trip(doc, remove_mark(2, link("a")))
+      marks = undone.content[0].content[0].raw_marks
+
+      expect(marks.map(&:type)).to contain_exactly("bold", "italic", "link")
+      expect(undone.to_h).not_to eq(doc.to_h)
+      expect(marks.map(&:type)).to eq(%w[bold italic link])
+    end
+  end
+
+  # Placing a replacement mark where the old one sat, rather than last, decides whether
+  # re-marked runs still match their neighbours -- merge_adjacent_text compares mark
+  # arrays element by element.
+  describe "range marking and adjacent-run merging" do
+    def doc_of(*texts)
+      Prosereflect::Parser.parse_document(
+        "type" => "doc",
+        "content" => [{ "type" => "paragraph", "content" => texts }],
+      )
+    end
+
+    def txt(str, marks)
+      { "type" => "text", "text" => str, "marks" => marks }
+    end
+
+    it "leaves a run whole when re-marking part of it changes nothing" do
+      doc = doc_of(txt("hello", [{ "type" => "link", "attrs" => { "href" => "a" } }, { "type" => "bold" }]))
+      same_link = Prosereflect::Mark::Link.new(attrs: { "href" => "a" })
+      result = Prosereflect::Transform::AddMarkStep.new(3, 6, same_link).apply(doc)
+
+      expect(result).to be_ok
+      expect(result.doc.to_h).to eq(doc.to_h)
+    end
+
+    it "keeps runs separate when they carry the same marks in a different order" do
+      doc = doc_of(
+        txt("he", [{ "type" => "bold" }, { "type" => "link", "attrs" => { "href" => "a" } }]),
+        txt("llo", [{ "type" => "link", "attrs" => { "href" => "b" } }, { "type" => "bold" }]),
+      )
+      new_link = Prosereflect::Mark::Link.new(attrs: { "href" => "c" })
+      result = Prosereflect::Transform::AddMarkStep.new(2, 7, new_link).apply(doc)
+
+      expect(result).to be_ok
+      runs = result.doc.content[0].content
+      expect(runs.map(&:text)).to eq(%w[he llo])
+      expect(runs.map { |r| r.raw_marks.map(&:type) }).to eq([%w[bold link], %w[link bold]])
     end
   end
 end
