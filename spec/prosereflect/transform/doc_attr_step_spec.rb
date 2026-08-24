@@ -27,6 +27,16 @@ RSpec.describe Prosereflect::Transform::DocAttrStep do
     expect(inverse.apply(step.apply(doc).doc)).to be_ok
   end
 
+  it "removes an added attr again when inverted on a document that had none" do
+    doc = plain_doc
+    step = described_class.new({ "title" => "T" })
+
+    applied = step.apply(doc).doc
+    restored = step.invert(doc).apply(applied).doc
+
+    expect(restored.attrs || {}).not_to have_key("title")
+  end
+
   it "restores a replaced attr" do
     doc = Prosereflect::Parser.parse_document(
       "type" => "doc", "attrs" => { "title" => "old" },

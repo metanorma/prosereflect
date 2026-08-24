@@ -123,8 +123,8 @@ module Prosereflect
 
       def get_old_doc_attrs(doc)
         current = doc.attrs || {}
-        @attrs.keys.each_with_object({}) do |key, old|
-          old[key] = current[key] if current.key?(key)
+        @attrs.keys.to_h do |key|
+          [key, current[key]]
         end
       end
     end
