@@ -19,10 +19,11 @@ module Prosereflect
 
     def initialize(attributes = {})
       attributes[:content] ||= []
-      attributes[:attrs] = {
-        "line_numbers" => false,
-      }
+      passed = attributes[:attrs]
+      attributes[:attrs] = { "line_numbers" => false }
       super
+
+      self.line_numbers = passed["line_numbers"] if passed && !passed["line_numbers"].nil?
     end
 
     def self.create(attrs = nil)

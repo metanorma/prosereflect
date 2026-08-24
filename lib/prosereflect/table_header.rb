@@ -22,6 +22,13 @@ module Prosereflect
     def initialize(attributes = {})
       attributes[:content] ||= []
       super
+
+      return unless attributes[:attrs]
+
+      a = attributes[:attrs]
+      self.scope = a["scope"] if a["scope"]
+      self.abbr = a["abbr"] if a["abbr"]
+      self.colspan = a["colspan"] if a["colspan"]
     end
 
     def self.create(attrs = nil)

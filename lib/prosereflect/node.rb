@@ -131,23 +131,11 @@ module Prosereflect
       elsif value.is_a?(Array)
         @marks = value.map do |v|
           if v.is_a?(Hash)
-            type = v["type"] || v[:type]
-            attrs = v["attrs"] || v[:attrs]
-            begin
-              mark_class = Prosereflect::Mark.const_get(type.to_s.capitalize)
-              mark_class.new(attrs: attrs)
-            rescue NameError
-              Mark::Base.new(type: type, attrs: attrs)
-            end
+            Prosereflect::Mark.from_h(v)
           elsif v.is_a?(Mark::Base)
             v
           elsif v.respond_to?(:type)
-            begin
-              mark_class = Prosereflect::Mark.const_get(v.type.to_s.capitalize)
-              mark_class.new(attrs: v.attrs)
-            rescue NameError
-              Mark::Base.new(type: v.type, attrs: v.attrs)
-            end
+            Prosereflect::Mark.from_h("type" => v.type, "attrs" => v.attrs)
           else
             raise ArgumentError, "Invalid mark type: #{v.class}"
           end
@@ -317,6 +305,63 @@ module Prosereflect
       nodes_between(0, node_size - 1, &block)
     end
 
+    # The node whose token sits at pos, in this node's local space (own token at 0,
+    # children from offset 1). pos == 0 is this node itself; a position that lands
+    # inside a text node's characters resolves to nil.
+    def node_at(pos)
+      return self if pos.zero?
+
+      child, _index, child_start = child_covering(pos)
+      child&.node_at(pos - child_start)
+    end
+
+    # Rebuild the single node whose token sits at pos via the block, returning a new
+    # tree. pos == 0 rebuilds this node. A position that lands on no node token
+    # returns an equivalent tree unchanged.
+    def map_node_at(pos, &rebuild)
+      return yield(self) if pos.zero?
+
+      child, index, child_start = child_covering(pos)
+      return self unless child
+
+      rebuilt = child.map_node_at(pos - child_start, &rebuild)
+      copy(content.each_with_index.map { |node, i| i == index ? rebuilt : node })
+    end
+
+    # Apply `transform` to the marks of every inline node overlapping [from, to),
+    # returning a new node. Positions are local to this node (own token at 0, children
+    # from offset 1). transform takes a marks array and returns the new marks array;
+    # both add and remove are expressed this way. Text overlapping the range is split
+    # at the boundaries and only the covered piece is re-marked; a covered inline leaf
+    # is re-marked whole; element children are recursed into.
+    def update_marks(from, to, &transform)
+      return self unless content && to > from
+
+      before = []
+      touched = []
+      after = []
+      each_child_span do |child, _index, child_start, child_end|
+        if child_end <= from
+          before << child
+        elsif child_start >= to
+          after << child
+        else
+          touched.concat(remark_child(child, from, to, child_start, child_end, &transform))
+        end
+      end
+
+      # Re-marking replaces marks without moving content, so the edit's two
+      # only places a merge can newly become possible. The immediate neighbour on
+      # each side joins the merged run; siblings past them are carried across
+      # untouched. Note this is a wider rule than splice's, which merges only the
+      # trimmed edges and the inserted nodes: splice removes content, so its
+      # surviving neighbours were already non-adjacent and normalizing them would
+      # restructure parts of the document the edit never reached.
+      head = before.pop
+      tail = after.shift
+      copy(before + merge_adjacent_text([head, *touched, tail].compact) + after)
+    end
+
     # Check structural equality with another node.
     def eq?(other)
       return false unless other.is_a?(Node)
@@ -324,9 +369,9 @@ module Prosereflect
       type == other.type && to_h == other.to_h
     end
 
-    # Create a copy of this node with different content.
-    def copy(new_content = nil, new_attrs = attrs)
-      new_node = self.class.new(type: type, attrs: new_attrs, marks: raw_marks)
+    # Create a copy of this node with different content, attrs, and/or marks.
+    def copy(new_content = nil, new_attrs = attrs, new_marks = raw_marks)
+      new_node = self.class.new(type: type, attrs: new_attrs, marks: new_marks)
       case new_content
       when nil
         # no content
@@ -338,6 +383,12 @@ module Prosereflect
         new_node.content = [new_content]
       end
       new_node
+    end
+
+    # Rebuild this node carrying a new mark set. Text overrides this because copy
+    # cannot carry a text node's string.
+    def with_marks(new_marks)
+      copy(content, attrs, new_marks)
     end
 
     # Ensures YAML serialization outputs plain data instead of a Ruby object
@@ -368,6 +419,15 @@ module Prosereflect
         yield child, index, pos, child_end
         pos = child_end
       end
+    end
+
+    # The child whose extent [child_start, child_end) contains pos, as
+    # [child, index, child_start], or nil if pos is outside every child.
+    def child_covering(pos)
+      each_child_span do |child, index, child_start, child_end|
+        return [child, index, child_start] if pos >= child_start && pos < child_end
+      end
+      nil
     end
 
     # [index, start] of the child the range resolves inside, or nil to splice at
@@ -434,15 +494,39 @@ module Prosereflect
       child.replace(1, offset, [])
     end
 
+    # The re-marked replacement for one child of update_marks, which only ever
+    # passes children overlapping [from, to): a text child split at the boundaries
+    # with the covered piece re-marked; a covered inline leaf re-marked whole; an
+    # element child recursed into.
+    def remark_child(child, from, to, child_start, child_end, &transform)
+      if child.text?
+        remark_text(child, from, to, child_start, child_end, &transform)
+      elsif child.leaf? && child.inline?
+        [child.with_marks(yield(child.raw_marks || []))]
+      else
+        [child.update_marks(from - child_start, to - child_start, &transform)]
+      end
+    end
+
+    # Split a text child at the range boundaries and re-mark only the covered piece.
+    # Empty edge pieces are dropped by merge_adjacent_text in update_marks.
+    def remark_text(child, from, to, child_start, child_end, &transform)
+      cover_from = [from, child_start].max - child_start
+      cover_to = [to, child_end].min - child_start
+      covered = child.cut(cover_from, cover_to).with_marks(yield(child.raw_marks || []))
+      [child.cut(0, cover_from), covered, child.cut(cover_to)]
+    end
+
     # Drops empty text (a trimmed edge cut to "") and joins same-mark text into
-    # one node. Applied only to the spliced run -- see splice for why untouched
-    # children are deliberately left unmerged.
+    # one node. Applied only to the run the caller hands it -- see splice and
+    # update_marks for why untouched children are deliberately left unmerged.
     def merge_adjacent_text(nodes)
       nodes.reject { |node| node.text? && node.text_content.empty? }
         .each_with_object([]) do |node, result|
           previous = result.last
           if mergeable_text?(previous, node)
             result[-1] = previous.class.new(text: previous.text + node.text,
+                                            attrs: previous.attrs,
                                             marks: previous.raw_marks)
           else
             result << node
@@ -450,12 +534,14 @@ module Prosereflect
         end
     end
 
-    # Compares serialized marks, since unmarked text is represented as both nil
-    # and [] and the two must not be treated as different marks.
+    # Normalizes both sides before comparing, since absence is spelled two ways:
+    # unmarked text is nil or [], and attribute-less text is nil or {}. Neither
+    # pair may read as a difference, or equivalent runs would refuse to merge.
     def mergeable_text?(previous, node)
       return false unless previous&.text? && node.text?
 
-      (previous.marks || []) == (node.marks || [])
+      (previous.marks || []) == (node.marks || []) &&
+        (previous.attrs || {}) == (node.attrs || {})
     end
 
     def build_path_for_pos(pos, path, index = 0, start_offset = 0)

@@ -24,17 +24,16 @@ module Prosereflect
     def initialize(attributes = {})
       # Images don't have content, they're self-contained
       attributes[:content] = []
-
-      # Extract attributes from the attrs hash if provided
-      if attributes[:attrs]
-        @src = attributes[:attrs]["src"]
-        @alt = attributes[:attrs]["alt"]
-        @title = attributes[:attrs]["title"]
-        @width = attributes[:attrs]["width"]
-        @height = attributes[:attrs]["height"]
-      end
-
       super
+
+      return unless attributes[:attrs]
+
+      a = attributes[:attrs]
+      self.src = a["src"] if a["src"]
+      self.alt = a["alt"] if a["alt"]
+      self.title = a["title"] if a["title"]
+      self.width = a["width"] if a["width"]
+      self.height = a["height"] if a["height"]
     end
 
     def self.create(attrs = nil)

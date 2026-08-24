@@ -5,7 +5,15 @@ require_relative "step_map"
 
 module Prosereflect
   module Transform
-    # Set or remove attributes on a node at a position
+    # Set or remove attributes on a node at a position.
+    #
+    # `pos` addresses a node token, so pos 0 addresses the document node itself.
+    #
+    # A node class that rebuilds `attrs` in its own `to_h` keeps only the keys it
+    # declares, so keys this step sets outside that set do not survive
+    # serialization. CodeBlockWrapper is one such class. The step reports success
+    # either way; it sets what it was asked to set and leaves each node class to
+    # decide what it serializes.
     class AttrStep < Step
       attr_reader :pos, :attrs
 
@@ -16,14 +24,10 @@ module Prosereflect
       end
 
       def apply(doc)
-        return Result.fail("Invalid position") if @pos.negative? || @pos > doc.node_size
+        return Result.fail("Invalid position") unless position_in_bounds?(@pos, doc)
+        return Result.fail("Invalid attrs") unless @attrs.is_a?(Hash)
 
-        begin
-          new_doc = set_node_attrs(doc)
-          Result.ok(new_doc)
-        rescue StandardError => e
-          Result.fail(e.message)
-        end
+        Result.ok(set_node_attrs(doc))
       end
 
       def get_map
@@ -48,55 +52,25 @@ module Prosereflect
       end
 
       def self.from_json(_schema, json)
-        new(json["pos"], json["attrs"])
+        new(integer_position(json, "pos"), json["attrs"])
       end
 
       private
 
       def set_node_attrs(doc)
-        target_node = find_node_at(doc, @pos)
-        return doc unless target_node
-
-        new_attrs = compute_new_attrs(target_node)
-        replace_node_with_new_attrs(doc, target_node, new_attrs)
+        doc.map_node_at(@pos) { |node| node.copy(node.content, compute_new_attrs(node)) }
       end
 
       def compute_new_attrs(target_node)
-        new_attrs = target_node.attrs.merge(@attrs)
-        new_attrs.compact!
-        new_attrs
-      end
-
-      def replace_node_with_new_attrs(doc, target_node, new_attrs)
-        new_content = doc.content.to_a.map { |node| replace_node(node, target_node, new_attrs) }
-        doc.copy(new_content, doc.attrs.dup)
-      end
-
-      def replace_node(node, target_node, new_attrs)
-        return node unless node == target_node
-
-        node.class.new(
-          content: node.content,
-          marks: node.marks,
-          attrs: new_attrs,
-        )
-      end
-
-      def find_node_at(doc, pos)
-        result = nil
-        doc.nodes_between(pos, pos + 1) do |node|
-          result = node
-        end
-        result
+        (target_node.attrs || {}).merge(@attrs).compact
       end
 
       def get_old_attrs(doc)
-        target_node = find_node_at(doc, @pos)
+        target_node = doc.node_at(@pos)
         return {} unless target_node
 
-        # Return only the attrs that we're changing
-        @attrs.keys.each_with_object({}) do |key, old|
-          old[key] = target_node.attrs[key] if target_node.attrs.key?(key)
+        @attrs.keys.to_h do |key|
+          [key, target_node.attrs&.[](key)]
         end
       end
     end
@@ -143,13 +117,14 @@ module Prosereflect
       private
 
       def set_doc_attrs(doc)
-        new_attrs = doc.attrs.merge(@attrs).compact
+        new_attrs = (doc.attrs || {}).merge(@attrs).compact
         doc.class.new(content: doc.content, attrs: new_attrs)
       end
 
       def get_old_doc_attrs(doc)
-        @attrs.keys.each_with_object({}) do |key, old|
-          old[key] = doc.attrs[key] if doc.attrs.key?(key)
+        current = doc.attrs || {}
+        @attrs.keys.to_h do |key|
+          [key, current[key]]
         end
       end
     end

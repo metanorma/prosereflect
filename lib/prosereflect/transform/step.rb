@@ -31,13 +31,10 @@ module Prosereflect
         raise NotImplementedError, "#{self.class} must implement #invert"
       end
 
-      # Get a JSON representation
+      # Get a JSON representation. Subclasses add their own positions; the base
+      # cannot guess them, and guessing produced keys that meant nothing.
       def to_json(*_args)
-        {
-          "stepType" => step_type,
-          "pos" => pos,
-          "to" => to,
-        }.compact
+        { "stepType" => step_type }
       end
 
       # Create a step from JSON
@@ -45,20 +42,32 @@ module Prosereflect
         raise NotImplementedError, "#{self.class} must implement #from_json"
       end
 
+      # Read a position out of deserialized JSON, refusing anything that is not
+      # an Integer. Positions come from another producer's wire format, so they
+      # are checked here rather than surfacing as a NoMethodError inside `apply`.
+      def self.integer_position(json, key)
+        value = json[key]
+        return value if value.is_a?(Integer)
+
+        raise ArgumentError, "#{name}: #{key.inspect} must be an Integer, got #{value.class}"
+      end
+
       # The type name of this step
       def step_type
         raise NotImplementedError, "#{self.class} must implement #step_type"
       end
 
-      # Position where this step applies
-      def pos
-        0
+      # Whether pos can address a node in doc. A step that addresses a node reads
+      # a position in 0...node_size, so node_size itself is out of bounds. Range
+      # ends and insertion gaps are a different space and may equal node_size.
+      # In bounds is not the same as occupied: a position inside a text node's
+      # characters passes this and still resolves to no node.
+      def position_in_bounds?(pos, doc)
+        !pos.negative? && pos < doc.node_size
       end
 
-      # End position (for range steps)
-      def to
-        pos
-      end
+      private :position_in_bounds?
+      private_class_method :integer_position
 
       # Result of applying a step
       class Result
