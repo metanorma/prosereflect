@@ -38,11 +38,19 @@ module Prosereflect
       true
     end
 
-    # Return a copy of this text node with content restricted to range
+    # Return a copy of this text node with content restricted to range.
+    # Carries attrs for the same reason copy does: splitting a run must not drop
+    # attributes an AttrStep put on it.
     def cut(from = 0, to = nil)
       txt = text || ""
       to ||= txt.length
-      self.class.new(text: txt[from...to], marks: raw_marks)
+      self.class.new(text: txt[from...to], attrs: attrs, marks: raw_marks)
+    end
+
+    # A text node stores its string in `text`, not `content`, so the generic copy
+    # would drop it. Preserve the string; new_content has no meaning for text.
+    def copy(_new_content = nil, new_attrs = attrs, new_marks = raw_marks)
+      self.class.new(text: text, attrs: new_attrs, marks: new_marks)
     end
 
     # Check equality with another text node

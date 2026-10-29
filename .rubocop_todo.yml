@@ -122,6 +122,7 @@ Naming/PredicateMethod:
 # MethodDefinitionMacros: define_method, define_singleton_method
 Naming/PredicatePrefix:
   Exclude:
+    - 'lib/prosereflect/mark/base.rb'
     - 'lib/prosereflect/schema/mark.rb'
     - 'lib/prosereflect/schema/mark_type.rb'
     - 'lib/prosereflect/schema/node.rb'

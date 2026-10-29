@@ -21,10 +21,9 @@ module Prosereflect
       super
       self.content ||= []
 
-      # Extract level from attrs if provided
       return unless params[:attrs]
 
-      @level = params[:attrs]["level"]
+      self.level = params[:attrs]["level"] if params[:attrs]["level"]
     end
 
     def self.create(attrs = nil)

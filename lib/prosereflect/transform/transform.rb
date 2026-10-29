@@ -18,6 +18,7 @@ module Prosereflect
       attr_reader :steps, :mapping
 
       def initialize(doc)
+        @original_doc = doc
         @doc = doc
         @steps = []
         @mapping = Mapping.new
@@ -67,13 +68,13 @@ module Prosereflect
 
       # Apply all accumulated steps to the document
       # Returns self for chaining
+      # Replays from the original document, so calling apply (or doc) again is
+      # idempotent instead of compounding the same steps onto prior output.
+      # Assigns after each step, so a later failure leaves the steps that already
+      # succeeded applied rather than discarding them.
       def apply
-        @steps.each do |step|
-          result = step.apply(@doc)
-          raise ApplyError, "Step #{step.class} failed: #{result.failed}" unless result.ok?
-
-          @doc = result.doc
-        end
+        @doc = @original_doc
+        @steps.each { |step| @doc = apply_step(@doc, step) }
         self
       end
 
@@ -118,7 +119,7 @@ module Prosereflect
         step = @steps.pop
         @mapping = Mapping.new(maps: @mapping.to_a[0...-1])
 
-        inverted = step.invert(@doc)
+        inverted = step.invert(doc_before_last_step)
         result = inverted.apply(@doc)
         if result.ok?
           @doc = result.doc
@@ -305,6 +306,24 @@ module Prosereflect
       end
 
       private
+
+      # The document as it stood before the step just popped, which is what
+      # `invert` reads. Rebuilt by replaying the steps that remain rather than
+      # cached, because `apply` can run more than once over the same steps and a
+      # cached document would go stale without any signal. A replay that fails
+      # raises out of `rollback`, which by then has already popped the step -- so
+      # rollback guarantees nothing about its state on failure. That only happens
+      # on steps that never applied cleanly in the first place.
+      def doc_before_last_step
+        @steps.reduce(@original_doc) { |doc, step| apply_step(doc, step) }
+      end
+
+      def apply_step(doc, step)
+        result = step.apply(doc)
+        raise ApplyError, "Step #{step.class} failed: #{result.failed}" unless result.ok?
+
+        result.doc
+      end
 
       def replace_around_step(from, to, gap_from, gap_to, slice, insert, structure)
         add_step(ReplaceAroundStep.new(from, to, gap_from, gap_to, slice, insert, structure: structure))

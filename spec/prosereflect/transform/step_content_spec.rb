@@ -48,7 +48,8 @@ RSpec.describe "Transform steps rebuild documents with node content" do # ruboco
 
   describe Prosereflect::Transform::AttrStep do
     let(:doc) { build_doc(attrs: { "align" => "left" }) }
-    let(:result) { described_class.new(0, { "align" => "center" }).apply(doc) }
+    # Token model: pos 0 is the doc's own token; the first paragraph's token is at 1.
+    let(:result) { described_class.new(1, { "align" => "center" }).apply(doc) }
 
     it_behaves_like "a step yielding node content"
 

@@ -11,5 +11,17 @@ module Prosereflect
     autoload :Subscript, "#{__dir__}/mark/subscript"
     autoload :Superscript, "#{__dir__}/mark/superscript"
     autoload :Underline, "#{__dir__}/mark/underline"
+
+    # Reconstruct a runtime mark from a serialized hash, mirroring Node#marks=.
+    def self.from_h(hash)
+      type = hash["type"] || hash[:type]
+      attrs = hash["attrs"] || hash[:attrs]
+      klass = begin
+        const_get(type.to_s.capitalize, false)
+      rescue NameError
+        nil
+      end
+      klass && klass < Base ? klass.new(attrs: attrs) : Base.new(type: type, attrs: attrs)
+    end
   end
 end
