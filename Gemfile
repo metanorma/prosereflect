@@ -5,7 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in prosereflect.gemspec
 gemspec
 
-gem "lutaml-model", github: "lutaml/lutaml-model", branch: "main"
+gem "lutaml-model", "~> 0.8.164"
 gem "rake"
 gem "rspec"
 gem "rubocop"
